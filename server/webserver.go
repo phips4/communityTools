@@ -19,9 +19,6 @@ func New(mgoSession *mgo.Session) *WebServer {
 
 func (server *WebServer) Init() {
 	server.Router = gin.Default()
-
-	server.Router.Use(mgoSessionMiddleware(server.MgoSession))
-
 }
 
 func (server *WebServer) Run() {
