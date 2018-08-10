@@ -3,21 +3,47 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/phips4/communityTools/server"
-	"gopkg.in/mgo.v2"
-	"gopkg.in/mgo.v2/bson"
-	"log"
+			"log"
 	"net/http"
+	"github.com/phips4/communityTools/app/db"
+	"regexp"
+	"gopkg.in/mgo.v2"
 )
 
 func createPollPOST(ctx *gin.Context) {
-	sess, ok := ctx.Get("mgo")
-	defer sess.(*mgo.Session).Close()
-
-	if !ok {
-		AbortWithError(ctx, "db ctx doest not exist") //TODO: proper error handling
-	}
+	sess := db.GetPollSession()
+	defer sess.Close()
 
 	id := ctx.DefaultPostForm("id", "")
+	//TODO: post params verify
+
+	ok, err := regexp.Match("^[a-zA-Z0-9_]*$", []byte(id))
+	if err != nil {
+		AbortWithError(ctx, http.StatusInternalServerError, "error while checking id")
+		return
+	}
+
+	if !ok {
+		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s). (a-zA-Z0-9_)")
+		return
+	}
+
+	exist, err := sess.PollExists(id)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			exist = false
+		} else {
+			AbortWithError(ctx, http.StatusInternalServerError, "error while fetching data from database, ")
+			return
+		}
+	}
+
+	if exist {
+		log.Println("poll id already exists")
+		AbortWithError(ctx, http.StatusBadRequest, "Poll ID already exists")
+		return
+	}
+
 	/*
 	title := ctx.DefaultPostForm("title", "")
 	description := ctx.DefaultPostForm("description", "")
@@ -26,30 +52,13 @@ func createPollPOST(ctx *gin.Context) {
 	options := ctx.PostFormArray("options")
 	*/
 
-	type idCheck struct {
-		ID string `bson:"_id"`
-	}
+	ctx.JSON(http.StatusCreated, gin.H{"msg": "poll created"})
 
-	var check idCheck
-	err := sess.(*mgo.Session).DB("communityTools").C("polls").Find(bson.M{"_id": id}).One(&check)
-
-	if err != nil {
-		log.Println("error: " + err.Error())
-		AbortWithError(ctx, err.Error()) //TODO: 500 Internal Server Error
-	}
-
-	if check.ID == id && check.ID != "" {
-		//TODO: ID already exists, send 4xx error
-		log.Printf("ID: %s already exists.", id)
-		//TODO:
-		return
-	}
-
-	log.Printf("Poll with ID: %s created.", id)
+	//TODO: debug error -.-'
 
 	//TODO: parse all poll fields
-
-	ctx.String(http.StatusOK, "poll created: " + id)
+	//TODO: check all fields (400 response if not valid)
+	//TODO: save poll in database
 }
 
 func AddAllPollHandler(server *server.WebServer) {

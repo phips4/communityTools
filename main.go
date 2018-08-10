@@ -17,13 +17,16 @@ func main() {
 	_ = conf
 
 	// mgo
-	mgoSession := db.ConnectMongo(conf.MongoDB.Host, conf.MongoDB.Port)
-	defer mgoSession.Close()
+	mongo := db.Connect(conf.MongoDB.Host, conf.MongoDB.Port)
+	defer mongo.Close()
+
+	db.Login(conf.MongoDB.Database, nil)
+
 
 	log.Println("starting application")
 
 	//webserver
-	webServer := server.New(mgoSession)
+	webServer := server.New(mongo)
 	webServer.Init()
 	//register all handlers
 	handler.AddAllPollHandler(webServer)

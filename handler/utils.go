@@ -2,10 +2,9 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
-func AbortWithError(ctx *gin.Context, err string) {
-	ctx.JSON(http.StatusInternalServerError, gin.H{"status": "error", "msg": err})
+func AbortWithError(ctx *gin.Context, code int, err string) {
+	ctx.JSON(code, gin.H{"msg": err})
 	ctx.Abort()
 }

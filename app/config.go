@@ -14,8 +14,9 @@ MongoDB:
   host: "localhost"
   port: 27017
   user: "ComToolsUser"
+  database: communityTools
   password: "312surlaW"
-  collection: "communitytools"
+  setupCollections: true
 
 #Swift Openstack settings (ignore it if you are not going to use it)
 OpenstackSwift:
@@ -36,8 +37,9 @@ type ConfigStruct struct {
 		Host       string `yaml:"host"`
 		Port       int    `yaml:"port"`
 		User       string `yaml:"user"`
+		Database       string `yaml:"database"`
 		Password   string `yaml:"password"`
-		Collection string `yaml:"collection"`
+		SetupCollections bool `yaml:"setupCollections"`
 	} `yaml:"MongoDB"`
 	OpenstackSwift struct {
 		Host     string `yaml:"host"`

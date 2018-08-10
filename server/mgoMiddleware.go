@@ -7,9 +7,9 @@ import (
 
 func mgoSessionMiddleware(mgoSession *mgo.Session) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		session := mgoSession.Clone()
+		//session := mgoSession.Clone()
 		//defer session.Close()
 
-		ctx.Set("mgo", session)
+		//ctx.Set("mgo", session)
 	}
 }
