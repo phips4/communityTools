@@ -50,10 +50,8 @@ func Login(database string, credential *mgo.Credential) error {
 	return session.Login(credential)
 }
 
-
 func GetPollSession() *PollSession {
 	s := session.Clone()
-	log.Println(dbName)
 	return &PollSession{s.DB(dbName).C(pollCollection), s.Close}
 }
 
@@ -61,7 +59,7 @@ func GetPollSession() *PollSession {
  * PollSession methods
  */
 type PollSession struct {
-	c *mgo.Collection
+	c            *mgo.Collection
 	closePointer func()
 }
 
@@ -84,4 +82,8 @@ func (ps *PollSession) PollExists(id string) (bool, error) {
 	}
 
 	return check.ID == id, nil
+}
+
+func (ps *PollSession) SavePoll(doc interface{}) error {
+	return ps.c.Insert(doc)
 }

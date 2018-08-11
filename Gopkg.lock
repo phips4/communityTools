@@ -47,11 +47,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7e758f807faab4ca5614488e6397d2365f9a5767f6699a805bbe92a1d1a6da23"
+  digest = "1:33a43cb31975899cfcd81600d1390467db1778ae87102f80668a753fed8c663e"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "2be389f392cd91df245b41638f818a1c041f0c08"
+  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
 
 [[projects]]
   digest = "1:cbc72c4c4886a918d6ab4b95e347ffe259846260f99ebdd8a198c2331cf2b2e9"
@@ -89,6 +89,7 @@
   input-imports = [
     "github.com/gin-gonic/gin",
     "gopkg.in/mgo.v2",
+    "gopkg.in/mgo.v2/bson",
     "gopkg.in/yaml.v2",
   ]
   solver-name = "gps-cdcl"

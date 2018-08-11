@@ -34,12 +34,12 @@ type Config struct{}
 
 type ConfigStruct struct {
 	MongoDB struct {
-		Host       string `yaml:"host"`
-		Port       int    `yaml:"port"`
-		User       string `yaml:"user"`
-		Database       string `yaml:"database"`
-		Password   string `yaml:"password"`
-		SetupCollections bool `yaml:"setupCollections"`
+		Host             string `yaml:"host"`
+		Port             int    `yaml:"port"`
+		User             string `yaml:"user"`
+		Database         string `yaml:"database"`
+		Password         string `yaml:"password"`
+		SetupCollections bool   `yaml:"setupCollections"`
 	} `yaml:"MongoDB"`
 	OpenstackSwift struct {
 		Host     string `yaml:"host"`

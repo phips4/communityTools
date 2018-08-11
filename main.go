@@ -22,7 +22,6 @@ func main() {
 
 	db.Login(conf.MongoDB.Database, nil)
 
-
 	log.Println("starting application")
 
 	//webserver

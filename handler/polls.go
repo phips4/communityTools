@@ -2,29 +2,35 @@ package handler
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/phips4/communityTools/server"
-			"log"
-	"net/http"
 	"github.com/phips4/communityTools/app/db"
-	"regexp"
+	"github.com/phips4/communityTools/app/logic"
+	"github.com/phips4/communityTools/app/polls"
+	"github.com/phips4/communityTools/server"
 	"gopkg.in/mgo.v2"
+	"log"
+	"net/http"
 )
 
 func createPollPOST(ctx *gin.Context) {
 	sess := db.GetPollSession()
 	defer sess.Close()
 
-	id := ctx.DefaultPostForm("id", "")
-	//TODO: post params verify
+	id := ctx.PostForm("id")
+	title := ctx.PostForm("title")
+	description := ctx.PostForm("description")
+	cookieCheck := ctx.PostForm("cookieCheck")
+	multipleOptions := ctx.PostForm("multipleOptions")
+	options := ctx.PostFormArray("options")
 
-	ok, err := regexp.Match("^[a-zA-Z0-9_]*$", []byte(id))
-	if err != nil {
-		AbortWithError(ctx, http.StatusInternalServerError, "error while checking id")
+	log.Printf("id: %s, title: %s, desc: %s, cookie: %s, multiple: %s, options: %s.", id, title, description, cookieCheck, multipleOptions, options)
+
+	if !logic.ValidateID(id) {
+		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-32")
 		return
 	}
 
-	if !ok {
-		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s). (a-zA-Z0-9_)")
+	if !logic.ValidatePostParams(title, description, cookieCheck, multipleOptions, options) {
+		AbortWithError(ctx, http.StatusBadRequest, "invalid post parameter")
 		return
 	}
 
@@ -39,26 +45,19 @@ func createPollPOST(ctx *gin.Context) {
 	}
 
 	if exist {
-		log.Println("poll id already exists")
+		log.Println("poll ID already exists")
 		AbortWithError(ctx, http.StatusBadRequest, "Poll ID already exists")
 		return
 	}
+	// now, all parameters are valid
+	p := polls.NewPoll(id, title, description, cookieCheck, multipleOptions, options)
 
-	/*
-	title := ctx.DefaultPostForm("title", "")
-	description := ctx.DefaultPostForm("description", "")
-	cookieCheck := ctx.DefaultPostForm("cookieCheck", "false")
-	multipleOptions := ctx.DefaultPostForm("multipleOptions", "false")
-	options := ctx.PostFormArray("options")
-	*/
+	if err = sess.SavePoll(p); err != nil {
+		AbortWithError(ctx, http.StatusInternalServerError, "error saving data into database")
+		return
+	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"msg": "poll created"})
-
-	//TODO: debug error -.-'
-
-	//TODO: parse all poll fields
-	//TODO: check all fields (400 response if not valid)
-	//TODO: save poll in database
+	ctx.JSON(http.StatusCreated, gin.H{"msg": "poll successfully created"})
 }
 
 func AddAllPollHandler(server *server.WebServer) {

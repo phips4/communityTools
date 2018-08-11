@@ -14,13 +14,11 @@ func TestContains(t *testing.T) {
 		t.Error("apple could be found but it does not exist.")
 	}
 
-
 	src = []string{}
 
 	if Contains(src, "apple") == true {
 		t.Error("apple could be found but it does not exist")
 	}
-
 
 }
 
@@ -33,6 +31,5 @@ func TestContainsMany(t *testing.T) {
 	}
 
 	//TODO:
-
 
 }
