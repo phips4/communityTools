@@ -7,14 +7,11 @@ import (
 	"github.com/phips4/communityTools/app/polls"
 	"github.com/phips4/communityTools/server"
 	"gopkg.in/mgo.v2"
-	"log"
 	"net/http"
+	"strconv"
 )
 
 func createPollPOST(ctx *gin.Context) {
-	sess := db.GetPollSession()
-	defer sess.Close()
-
 	id := ctx.PostForm("id")
 	title := ctx.PostForm("title")
 	description := ctx.PostForm("description")
@@ -22,10 +19,8 @@ func createPollPOST(ctx *gin.Context) {
 	multipleOptions := ctx.PostForm("multipleOptions")
 	options := ctx.PostFormArray("options")
 
-	log.Printf("id: %s, title: %s, desc: %s, cookie: %s, multiple: %s, options: %s.", id, title, description, cookieCheck, multipleOptions, options)
-
 	if !logic.ValidateID(id) {
-		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-32")
+		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength))
 		return
 	}
 
@@ -33,6 +28,9 @@ func createPollPOST(ctx *gin.Context) {
 		AbortWithError(ctx, http.StatusBadRequest, "invalid post parameter")
 		return
 	}
+
+	sess := db.GetPollSession()
+	defer sess.Close()
 
 	exist, err := sess.PollExists(id)
 	if err != nil {
@@ -45,7 +43,6 @@ func createPollPOST(ctx *gin.Context) {
 	}
 
 	if exist {
-		log.Println("poll ID already exists")
 		AbortWithError(ctx, http.StatusBadRequest, "Poll ID already exists")
 		return
 	}
@@ -60,8 +57,76 @@ func createPollPOST(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"msg": "poll successfully created"})
 }
 
+func getPollGET(ctx *gin.Context) {
+	id := ctx.Param("id")
+
+	if !logic.ValidateID(id) {
+		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength))
+		return
+	}
+
+	sess := db.GetPollSession()
+	defer sess.Close()
+
+	poll, err := sess.GetPoll(id)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			AbortWithError(ctx, http.StatusBadRequest, "Poll does not exist")
+			return
+		}
+
+		AbortWithError(ctx, http.StatusInternalServerError, "Error while searching ID from database.")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"msg": "ok", "data": poll})
+}
+
+func votePollPUT(ctx *gin.Context) {
+	id := ctx.Param("id")
+	//ip := ctx.Request.RemoteAddr
+	//TODO: rewrite IP getter for produktion (headers, proxies, etc)
+	ip := logic.GetIp(ctx.Request)
+	cookieToken := ctx.PostForm("cookieToken")
+	option := ctx.PostForm("option")
+
+	if !logic.ValidateID(id) {
+		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength))
+		return
+	}
+
+	sess := db.GetPollSession()
+	defer sess.Close()
+
+	poll, err := sess.GetPoll(id)
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			AbortWithError(ctx, http.StatusNotFound, "Id not found")
+			return
+		}
+
+		AbortWithError(ctx, http.StatusInternalServerError, "error while getting poll from database.")
+		return
+	}
+
+	if !logic.ApplyVote(poll, ip, cookieToken, option) {
+		AbortWithError(ctx, http.StatusBadRequest, "you already have voted or your option is bad.")
+		return
+	}
+
+	err = sess.UpdatePoll(id, poll)
+	if err != nil {
+		AbortWithError(ctx, http.StatusInternalServerError, "error while updating poll.")
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"msg": "successfully voted for " + option})
+}
+
 func AddAllPollHandler(server *server.WebServer) {
 	pollGroup := server.Router.Group("/api/v1/poll")
 
 	pollGroup.POST("/create", createPollPOST)
+	pollGroup.GET("/get/:id", getPollGET)
+	pollGroup.PUT("/vote/:id", votePollPUT)
 }

@@ -6,27 +6,32 @@ import (
 )
 
 type PollOption struct {
-	Option string `json:"option"`
-	Votes  int    `json:"votes,omitempty"`
+	Option    string `json:"option"`
+	VoteCount int    `json:"votesCount"`
+}
+
+type Vote struct {
+	IP          string `bson:"ip" json:"ip"`
+	CookieToken string `bson:"cookieToken" json:"cookie_token"`
 }
 
 type Poll struct {
-	ID              string       `bson:"_id" json:"id"`
-	Title           string       `bson:"title" json:"title"`
-	Description     string       `bson:"description" json:"description"`
-	CreatedAt       time.Time    `bson:"createdAt" json:"created_at,omitempty"`
-	CookieCheck     bool         `bson:"cookieCheck" json:"cookie_check"`
-	MultipleOptions bool         `bson:"multipleOptions" json:"multiple_options"`
-	Options         []PollOption `json:"options,omitempty"`
+	ID              string        `bson:"_id" json:"id"`
+	Title           string        `json:"title"`
+	Description     string        `json:"description"`
+	CreatedAt       time.Time     `bson:"createdAt" json:"created_at,omitempty"`
+	CookieCheck     bool          `bson:"cookieCheck" json:"cookie_check"`
+	MultipleOptions bool          `bson:"multipleOptions" json:"multiple_options"`
+	Options         []*PollOption `json:"options,omitempty"`
+	Votes           []*Vote       `json:"votes,omitempty"`
+	TotalVotes      int           `json:"total_votes"`
 }
 
 func NewPoll(id, title, desc string, cookie, multiOptions string, options []string) *Poll {
-	pollOption := make([]PollOption, len(options))
+	pollOption := make([]*PollOption, len(options))
 
 	for i := range pollOption {
-		// don't use the element from the range iteration, it's a copy
-		pollOption[i].Option = options[i]
-		pollOption[i].Votes = 0 //not needed, I know
+		pollOption[i] = &PollOption{options[i], 0}
 	}
 
 	cookieCheck, err := strconv.ParseBool(cookie)
@@ -47,5 +52,7 @@ func NewPoll(id, title, desc string, cookie, multiOptions string, options []stri
 		cookieCheck,
 		multipleOptions,
 		pollOption,
+		nil,
+		0,
 	}
 }

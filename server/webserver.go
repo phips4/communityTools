@@ -26,5 +26,5 @@ func (server *WebServer) Run() {
 }
 
 func (server *WebServer) Stop() {
-	//TODO:
+	//TODO: graceful shutdown
 }

@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/phips4/communityTools/app/polls"
 	"gopkg.in/mgo.v2"
 	"log"
 	"time"
@@ -85,5 +86,18 @@ func (ps *PollSession) PollExists(id string) (bool, error) {
 }
 
 func (ps *PollSession) SavePoll(doc interface{}) error {
-	return ps.c.Insert(doc)
+	return func() error {
+		return ps.c.Insert(doc)
+	}()
+}
+
+func (ps *PollSession) GetPoll(id string) (*polls.Poll, error) {
+	var poll *polls.Poll
+	err := ps.c.FindId(id).One(&poll)
+
+	return poll, err
+}
+
+func (ps *PollSession) UpdatePoll(id string, poll *polls.Poll) error {
+	return ps.c.UpdateId(id, poll)
 }
