@@ -1,15 +1,21 @@
 package logic
 
 import (
-	"regexp"
-	"strconv"
+	"crypto/rand"
+	"encoding/base64"
 	"github.com/phips4/communityTools/app/polls"
 	"github.com/phips4/communityTools/app/utils"
 	"net/http"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
-const MaxStringLength = 64
-const MaxLongStringLentgh = 1024
+const (
+	MaxStringLength     = 64
+	MaxLongStringLentgh = 1024
+	DeleteIdLength      = 7
+)
 
 func ValidateID(id string) bool {
 
@@ -105,5 +111,22 @@ func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) bool {
 
 func GetIp(req *http.Request) string {
 	runes := []rune(req.RemoteAddr)
-	return string(runes[1:len(runes) - 7])
+	return string(runes[1 : len(runes)-7])
+}
+
+//TODO: unit tests
+func GenerateRandomBytes(n int) ([]byte, error) {
+	bytes := make([]byte, n)
+	_, err := rand.Read(bytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return bytes, nil
+}
+
+//TODO: unit tests
+func GenerateRandomString(s int) (string, error) {
+	bytes, err := GenerateRandomBytes(s)
+	return strings.Replace(base64.URLEncoding.EncodeToString(bytes), "=", "", -1), err
 }

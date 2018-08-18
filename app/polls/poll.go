@@ -15,6 +15,8 @@ type Vote struct {
 	CookieToken string `bson:"cookieToken" json:"cookie_token"`
 }
 
+//
+// we marshall the struct to json and not vice versa. Since that, fields annotated with "-" are fine.
 type Poll struct {
 	ID              string        `bson:"_id" json:"id"`
 	Title           string        `json:"title"`
@@ -24,10 +26,13 @@ type Poll struct {
 	MultipleOptions bool          `bson:"multipleOptions" json:"multiple_options"`
 	Options         []*PollOption `json:"options,omitempty"`
 	Votes           []*Vote       `json:"votes,omitempty"`
-	TotalVotes      int           `json:"total_votes"`
+	TotalVotes      int           `json:"totalVotes"`
+	VotingStopped   bool          `json:"votingStopped"`
+	EditToken       string        `bson:"editToken" json:"-"`
+	DeleteAt        time.Time     `json:"delete_at"`
 }
 
-func NewPoll(id, title, desc string, cookie, multiOptions string, options []string) *Poll {
+func NewPoll(id, title, desc, cookie, multiOptions, editToken string, deleteAt int, options []string) *Poll {
 	pollOption := make([]*PollOption, len(options))
 
 	for i := range pollOption {
@@ -54,5 +59,8 @@ func NewPoll(id, title, desc string, cookie, multiOptions string, options []stri
 		pollOption,
 		nil,
 		0,
+		false,
+		editToken,
+		time.Now().Add(time.Hour * time.Duration(24 * deleteAt)),
 	}
 }

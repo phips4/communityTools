@@ -13,21 +13,28 @@ import (
 
 func createPollPOST(ctx *gin.Context) {
 	id := ctx.PostForm("id")
-	title := ctx.PostForm("title")
-	description := ctx.PostForm("description")
-	cookieCheck := ctx.PostForm("cookieCheck")
-	multipleOptions := ctx.PostForm("multipleOptions")
-	options := ctx.PostFormArray("options")
-
 	if !logic.ValidateID(id) {
 		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength))
 		return
 	}
 
+	title := ctx.PostForm("title")
+	description := ctx.PostForm("description")
+	cookieCheck := ctx.PostForm("cookieCheck")
+	multipleOptions := ctx.PostForm("multipleOptions")
+	options := ctx.PostFormArray("options")
 	if !logic.ValidatePostParams(title, description, cookieCheck, multipleOptions, options) {
 		AbortWithError(ctx, http.StatusBadRequest, "invalid post parameter")
 		return
 	}
+
+	delete := ctx.PostForm("deleteIn")
+	deleteIn, err := strconv.ParseInt(delete, 10, 64)
+	if err != nil {
+		AbortWithError(ctx, http.StatusBadRequest, "deleteIn is not a number.")
+		return
+	}
+
 
 	sess := db.GetPollSession()
 	defer sess.Close()
@@ -46,8 +53,17 @@ func createPollPOST(ctx *gin.Context) {
 		AbortWithError(ctx, http.StatusBadRequest, "Poll ID already exists")
 		return
 	}
+
+	//64^DeleteIdLength should definitely be enough to avoid bruteforcing or guessing
+	//64^7 = 4.398e+12
+	rndStr, err := logic.GenerateRandomString(logic.DeleteIdLength)
+	if err != nil {
+		AbortWithError(ctx, http.StatusInternalServerError, "error while generating delete ID.")
+		return
+	}
+
 	// now, all parameters are valid
-	p := polls.NewPoll(id, title, description, cookieCheck, multipleOptions, options)
+	p := polls.NewPoll(id, title, description, cookieCheck, multipleOptions, rndStr, int(deleteIn), options)
 
 	if err = sess.SavePoll(p); err != nil {
 		AbortWithError(ctx, http.StatusInternalServerError, "error saving data into database")
@@ -67,7 +83,6 @@ func getPollGET(ctx *gin.Context) {
 
 	sess := db.GetPollSession()
 	defer sess.Close()
-
 	poll, err := sess.GetPoll(id)
 	if err != nil {
 		if err == mgo.ErrNotFound {
@@ -85,7 +100,7 @@ func getPollGET(ctx *gin.Context) {
 func votePollPUT(ctx *gin.Context) {
 	id := ctx.Param("id")
 	//ip := ctx.Request.RemoteAddr
-	//TODO: rewrite IP getter for produktion (headers, proxies, etc)
+	//TODO: rewrite IP getter for production (headers, proxies, etc)
 	ip := logic.GetIp(ctx.Request)
 	cookieToken := ctx.PostForm("cookieToken")
 	option := ctx.PostForm("option")
@@ -97,7 +112,6 @@ func votePollPUT(ctx *gin.Context) {
 
 	sess := db.GetPollSession()
 	defer sess.Close()
-
 	poll, err := sess.GetPoll(id)
 	if err != nil {
 		if err == mgo.ErrNotFound {
@@ -109,6 +123,12 @@ func votePollPUT(ctx *gin.Context) {
 		return
 	}
 
+	if poll.VotingStopped {
+		AbortWithError(ctx, http.StatusBadRequest, "voting has already stopped.")
+		return
+	}
+
+	//apply the new vote to the struct, so we can update it later
 	if !logic.ApplyVote(poll, ip, cookieToken, option) {
 		AbortWithError(ctx, http.StatusBadRequest, "you already have voted or your option is bad.")
 		return
@@ -127,6 +147,6 @@ func AddAllPollHandler(server *server.WebServer) {
 	pollGroup := server.Router.Group("/api/v1/poll")
 
 	pollGroup.POST("/create", createPollPOST)
-	pollGroup.GET("/get/:id", getPollGET)
 	pollGroup.PUT("/vote/:id", votePollPUT)
+	pollGroup.GET("/get/:id", getPollGET)
 }

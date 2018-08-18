@@ -1,6 +1,8 @@
 package utils
 
-import "github.com/phips4/communityTools/app/polls"
+import (
+	"github.com/phips4/communityTools/app/polls"
+)
 
 func ContainsMany(src, content []string) bool {
 	for _, contentElem := range content {
