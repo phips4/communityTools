@@ -1,8 +1,8 @@
 package utils
 
 import (
-	"testing"
 	"github.com/phips4/communityTools/app/polls"
+	"testing"
 )
 
 func TestContains(t *testing.T) {

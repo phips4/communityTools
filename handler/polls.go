@@ -11,10 +11,29 @@ import (
 	"strconv"
 )
 
+var statusIllegalId = "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength)
+
+const (
+	statusInvalidPostParams = "invalid post parameter"
+	statusPollNotExist      = "poll does not exist"
+)
+
+/* +--------------------+
+ * |        POST        |
+ * +--------------------+
+ * | • id               |
+ * | • title            |
+ * | • description      |
+ * | • cookieCheck      |
+ * | • multipleOptions  |
+ * | • options          |
+ * | • deleteIn         |
+ * +--------------------+
+ */
 func createPollPOST(ctx *gin.Context) {
 	id := ctx.PostForm("id")
 	if !logic.ValidateID(id) {
-		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength))
+		AbortWithError(ctx, http.StatusBadRequest, statusIllegalId)
 		return
 	}
 
@@ -24,7 +43,7 @@ func createPollPOST(ctx *gin.Context) {
 	multipleOptions := ctx.PostForm("multipleOptions")
 	options := ctx.PostFormArray("options")
 	if !logic.ValidatePostParams(title, description, cookieCheck, multipleOptions, options) {
-		AbortWithError(ctx, http.StatusBadRequest, "invalid post parameter")
+		AbortWithError(ctx, http.StatusBadRequest, statusInvalidPostParams)
 		return
 	}
 
@@ -34,7 +53,6 @@ func createPollPOST(ctx *gin.Context) {
 		AbortWithError(ctx, http.StatusBadRequest, "deleteIn is not a number.")
 		return
 	}
-
 
 	sess := db.GetPollSession()
 	defer sess.Close()
@@ -73,11 +91,17 @@ func createPollPOST(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, gin.H{"msg": "poll successfully created"})
 }
 
+/* +--------------------+
+ * |        GET         |
+ * +--------------------+
+ * | • id               |
+ * +--------------------+
+ */
 func getPollGET(ctx *gin.Context) {
 	id := ctx.Param("id")
 
 	if !logic.ValidateID(id) {
-		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength))
+		AbortWithError(ctx, http.StatusBadRequest, statusIllegalId)
 		return
 	}
 
@@ -86,7 +110,7 @@ func getPollGET(ctx *gin.Context) {
 	poll, err := sess.GetPoll(id)
 	if err != nil {
 		if err == mgo.ErrNotFound {
-			AbortWithError(ctx, http.StatusBadRequest, "Poll does not exist")
+			AbortWithError(ctx, http.StatusBadRequest, statusPollNotExist)
 			return
 		}
 
@@ -97,6 +121,13 @@ func getPollGET(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"msg": "ok", "data": poll})
 }
 
+/* +--------------------+
+ * |        PUT         |
+ * +--------------------+
+ * | • id               |
+ * | • cookieToken      |
+ * +--------------------+
+ */
 func votePollPUT(ctx *gin.Context) {
 	id := ctx.Param("id")
 	//ip := ctx.Request.RemoteAddr
@@ -106,7 +137,7 @@ func votePollPUT(ctx *gin.Context) {
 	option := ctx.PostForm("option")
 
 	if !logic.ValidateID(id) {
-		AbortWithError(ctx, http.StatusBadRequest, "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength))
+		AbortWithError(ctx, http.StatusBadRequest, statusIllegalId)
 		return
 	}
 
@@ -128,7 +159,7 @@ func votePollPUT(ctx *gin.Context) {
 		return
 	}
 
-	//apply the new vote to the struct, so we can update it later
+	//apply the new vote to the struct, so we can update it in the DB later
 	if !logic.ApplyVote(poll, ip, cookieToken, option) {
 		AbortWithError(ctx, http.StatusBadRequest, "you already have voted or your option is bad.")
 		return

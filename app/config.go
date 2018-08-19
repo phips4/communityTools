@@ -25,6 +25,11 @@ OpenstackSwift:
   user: "ComToolsUser"
   password: "312surlaWkcatsnepo"
 
+#webserver
+Webserver:
+  host: ""
+  port: 4337
+
 #Generall settings
 #Use the locally filesystem instead of OpenStack Swift?
 useFileSystem: true
@@ -41,12 +46,18 @@ type ConfigStruct struct {
 		Password         string `yaml:"password"`
 		SetupCollections bool   `yaml:"setupCollections"`
 	} `yaml:"MongoDB"`
+
 	OpenstackSwift struct {
 		Host     string `yaml:"host"`
 		Port     int    `yaml:"port"`
 		User     string `yaml:"user"`
 		Password string `yaml:"password"`
 	} `yaml:"OpenstackSwift"`
+
+	WebServer struct {
+		Host string `yaml:"host"`
+		Port int    `yaml:"port"`
+	} `yaml:"Webserver"`
 
 	UseFileSystem string `yaml:"useFileSystem"`
 }

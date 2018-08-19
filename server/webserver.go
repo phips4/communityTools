@@ -1,30 +1,52 @@
 package server
 
 import (
+	"context"
 	"github.com/gin-gonic/gin"
-	"gopkg.in/mgo.v2"
+	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
 )
 
 type WebServer struct {
-	Router     *gin.Engine
-	MgoSession *mgo.Session
+	Router *gin.Engine
+	srv    *http.Server
 }
 
-func New(mgoSession *mgo.Session) *WebServer {
+func New() *WebServer {
 	return &WebServer{
+		gin.Default(),
 		nil,
-		mgoSession,
 	}
 }
 
-func (server *WebServer) Init() {
-	server.Router = gin.Default()
+func (server *WebServer) Listen(addr string) {
+	server.srv = &http.Server{
+		Addr:    addr,
+		Handler: server.Router,
+	}
+
+	go func() {
+		if err := server.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("webserver (%s) listen: %s\n", addr, err)
+		}
+	}()
+
+	quit := make(chan os.Signal)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+	log.Println("Shutdown server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if err := server.srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server Shutdown: ", err)
+	}
+	log.Println("good bye!")
 }
 
-func (server *WebServer) Run() {
-	server.Router.Run(":4337")
-}
-
-func (server *WebServer) Stop() {
-	//TODO: graceful shutdown
+func (server *WebServer) Stop(ctx context.Context) error {
+	return server.srv.Shutdown(ctx)
 }

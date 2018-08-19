@@ -61,6 +61,6 @@ func NewPoll(id, title, desc, cookie, multiOptions, editToken string, deleteAt i
 		0,
 		false,
 		editToken,
-		time.Now().Add(time.Hour * time.Duration(24 * deleteAt)),
+		time.Now().Add(time.Hour * time.Duration(24) * time.Duration(deleteAt)),
 	}
 }

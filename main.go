@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	. "github.com/phips4/communityTools/app"
 	"github.com/phips4/communityTools/app/db"
 	"github.com/phips4/communityTools/handler"
@@ -14,7 +15,6 @@ func main() {
 
 	//config
 	conf := loadConfig()
-	_ = conf
 
 	// mgo
 	mongo := db.Connect(conf.MongoDB.Host, conf.MongoDB.Port)
@@ -25,12 +25,10 @@ func main() {
 	log.Println("starting application")
 
 	//webserver
-	webServer := server.New(mongo)
-	webServer.Init()
+	webServer := server.New()
 	//register all handlers
 	handler.AddAllPollHandler(webServer)
-	webServer.Run()
-
+	webServer.Listen(fmt.Sprintf("%s:%d", conf.WebServer.Host, conf.WebServer.Port))
 }
 
 func loadLogger() func() {
