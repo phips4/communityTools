@@ -151,7 +151,7 @@ func votePollPUT(ctx *gin.Context) {
 }
 
 /* +--------------------+
- * |      PATCH         |
+ * |       PATCH        |
  * +--------------------+
  * | • id               |
  * | • editToken        |
@@ -187,7 +187,55 @@ func stopPollPATCH(ctx *gin.Context) {
 	ok(ctx, "voting stopped.")
 }
 
-/* helper functions */
+/* +--------------------+
+ * |       DELETE       |
+ * +--------------------+
+ * | • id               |
+ * | • editToken        |
+ * | • sure        |
+ * +--------------------+
+ */
+func deletePollDELETE(ctx *gin.Context) {
+	var id string
+	if ok := getId(ctx, &id); !ok {
+		return
+	}
+
+	sure, err := strconv.ParseBool(ctx.PostForm("sure"))
+	if err != nil {
+		AbortWithError(ctx, http.StatusBadRequest, "can not convert post parameter 'sure' to bool")
+		return
+	}
+	if !sure {
+		AbortWithError(ctx, http.StatusBadRequest, "deletion is not accepted by request.")
+		return
+	}
+
+	sess := db.GetPollSession()
+	defer sess.Close()
+	p, err := sess.GetPoll(id)
+	if !checkGetPoll(ctx, err) {
+		return
+	}
+
+	edit := ctx.PostForm("editToken")
+	if edit != p.EditToken {
+		AbortWithError(ctx, http.StatusBadRequest, "invalid editToken")
+		return
+	}
+
+	err = sess.DeletePoll(id)
+	if err != nil {
+		AbortWithError(ctx, http.StatusInternalServerError, "error while deleting poll")
+		return
+	}
+
+	ok(ctx, "successfully deleted.")
+}
+
+/**************************
+ *  helper functions
+ **************************/
 
 // returns true if id is valid
 func getId(ctx *gin.Context, id *string) bool {
@@ -222,4 +270,5 @@ func AddAllPollHandler(server *server.WebServer) {
 	pollGroup.PUT("/vote/:id", votePollPUT)
 	pollGroup.GET("/get/:id", getPollGET)
 	pollGroup.PATCH("/stop/:id", stopPollPATCH)
+	pollGroup.DELETE("/delete/:id", deletePollDELETE)
 }

@@ -6,6 +6,8 @@ import (
 )
 
 func TestContains(t *testing.T) {
+	t.Parallel()
+
 	src := []string{"apple", "banana", "avocado"}
 
 	if Contains(src, "apple") == false {
@@ -26,6 +28,8 @@ func TestContains(t *testing.T) {
 }
 
 func TestContainsMany(t *testing.T) {
+	t.Parallel()
+
 	src := []string{"apple", "coconut", "feijoa", "kiwi", "pear"}
 	search := []string{"feijoa", "kiwi", "pear"}
 
@@ -35,6 +39,8 @@ func TestContainsMany(t *testing.T) {
 }
 
 func TestContainsIpOrToken(t *testing.T) {
+	t.Parallel()
+
 	votes := make([]*polls.Vote, 3)
 	// random generated IPs and tokens
 	votes[0] = &polls.Vote{IP: "174.26.249.79", CookieToken: "POG74ViLCAAHDOXycdnE6CmkY"}

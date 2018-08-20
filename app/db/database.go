@@ -101,3 +101,7 @@ func (ps *PollSession) GetPoll(id string) (*polls.Poll, error) {
 func (ps *PollSession) UpdatePoll(id string, poll *polls.Poll) error {
 	return ps.c.UpdateId(id, poll)
 }
+
+func (ps *PollSession) DeletePoll(id string) error {
+	return ps.c.RemoveId(id)
+}
