@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"errors"
 )
 
 const (
@@ -16,6 +17,13 @@ const (
 	MaxLongStringLentgh = 1024
 	DeleteIdLength      = 7
 )
+
+
+var (
+	ErrAlreadyVoted = errors.New("you have already voted")
+	ErrSomethingWrong = errors.New("something went wrong")
+)
+
 
 func ValidateID(id string) bool {
 
@@ -72,8 +80,8 @@ func DefaultValidation(str string) bool {
 	return true
 }
 
-// returns true if it was successfully
-func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) bool {
+// returns nil if it was successfully
+func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) error {
 	optionContains := false
 	for _, e := range poll.Options {
 		if e.Option == option {
@@ -83,7 +91,7 @@ func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) bool {
 	}
 
 	if !optionContains {
-		return false
+		return ErrSomethingWrong
 	}
 
 	if poll.Votes == nil {
@@ -97,11 +105,11 @@ func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) bool {
 				poll.Options[i].VoteCount++
 			}
 		}
-		return true
+		return nil
 	}
 
 	if utils.ContainsIpOrToken(poll.Votes, ip, cookieToken) {
-		return false
+		return ErrAlreadyVoted
 	}
 
 	poll.Votes = append(poll.Votes, &polls.Vote{IP: ip, CookieToken: cookieToken})
@@ -113,7 +121,7 @@ func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) bool {
 	}
 
 	poll.TotalVotes++
-	return true
+	return nil
 }
 
 func GetIp(req *http.Request) string {

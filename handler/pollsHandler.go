@@ -110,6 +110,7 @@ func getPollGET(ctx *gin.Context) {
  * +--------------------+
  * | • id               |
  * | • cookieToken      |
+ * | • option           |
  * +--------------------+
  */
 func votePollPUT(ctx *gin.Context) {
@@ -117,11 +118,6 @@ func votePollPUT(ctx *gin.Context) {
 	if ok := getId(ctx, &id); !ok {
 		return
 	}
-
-	//ip := ctx.Request.RemoteAddr
-	//TODO: rewrite IP getter for production (headers, proxies, etc)
-	ip := logic.GetIp(ctx.Request)
-
 
 	sess := db.GetPollSession()
 	defer sess.Close()
@@ -136,8 +132,12 @@ func votePollPUT(ctx *gin.Context) {
 	cookieToken := ctx.PostForm("cookieToken")
 	option := ctx.PostForm("option")
 	//apply the new vote to the struct, so we can update it in the DB later
-	if !logic.ApplyVote(poll, ip, cookieToken, option) {
-		AbortWithError(ctx, http.StatusBadRequest, "you already have voted or your option is bad.")
+	if err := logic.ApplyVote(poll, ctx.ClientIP(), cookieToken, option); err != nil {
+		if err == logic.ErrAlreadyVoted {
+			AbortWithError(ctx, http.StatusBadRequest, "you have already voted")
+		} else {
+			AbortWithError(ctx, http.StatusBadRequest, "your given option might me wrong") //meh
+		}
 		return
 	}
 
