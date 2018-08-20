@@ -3,6 +3,8 @@ package logic
 import (
 	"encoding/json"
 	"github.com/phips4/communityTools/app/polls"
+	"net/http"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -66,11 +68,17 @@ func TestValidatePostParams(t *testing.T) {
 		t.Error("options array is not valid, thus this should be not valid")
 	}
 
+	deleteIn, err := strconv.ParseInt(delete, 10, 64)
+	if err != nil {
+		AbortWithError(ctx, http.StatusBadRequest, "deleteIn is not a number.")
+		return
+	}
+
 	t.Log("ValidatePostParams tested.")
 }
 
 func TestApplyVote(t *testing.T) {
-	p := polls.NewPoll("pollId", "pollTitle", "pollDesc", "true", "true", []string{"vote1", "vote2"})
+	p := polls.NewPoll("pollId", "pollTitle", "pollDesc", "true", "true", "editToken", 7, []string{"vote1", "vote2"})
 	p.CreatedAt = time.Date(2018, 8, 15, 0, 0, 0, 0, time.UTC)
 
 	if ApplyVote(p, "127.0.0.1", "cookieToken", "vote1") == false {

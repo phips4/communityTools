@@ -16,6 +16,7 @@ var statusIllegalId = "ID contains illegal character(s) or is too long. (a-zA-Z0
 const (
 	statusInvalidPostParams = "invalid post parameter"
 	statusPollNotExist      = "poll does not exist"
+	statusErrorUpdateing = "error while updating poll."
 )
 
 /* +--------------------+
@@ -31,9 +32,8 @@ const (
  * +--------------------+
  */
 func createPollPOST(ctx *gin.Context) {
-	id := ctx.PostForm("id")
-	if !logic.ValidateID(id) {
-		AbortWithError(ctx, http.StatusBadRequest, statusIllegalId)
+	var id string
+	if ok := getId(ctx, &id); !ok {
 		return
 	}
 
@@ -42,21 +42,14 @@ func createPollPOST(ctx *gin.Context) {
 	cookieCheck := ctx.PostForm("cookieCheck")
 	multipleOptions := ctx.PostForm("multipleOptions")
 	options := ctx.PostFormArray("options")
-	if !logic.ValidatePostParams(title, description, cookieCheck, multipleOptions, options) {
+	del := ctx.PostForm("deleteIn")
+	if !logic.ValidatePostParams(title, description, cookieCheck, multipleOptions, del, options) {
 		AbortWithError(ctx, http.StatusBadRequest, statusInvalidPostParams)
-		return
-	}
-
-	delete := ctx.PostForm("deleteIn")
-	deleteIn, err := strconv.ParseInt(delete, 10, 64)
-	if err != nil {
-		AbortWithError(ctx, http.StatusBadRequest, "deleteIn is not a number.")
 		return
 	}
 
 	sess := db.GetPollSession()
 	defer sess.Close()
-
 	exist, err := sess.PollExists(id)
 	if err != nil {
 		if err == mgo.ErrNotFound {
@@ -68,7 +61,7 @@ func createPollPOST(ctx *gin.Context) {
 	}
 
 	if exist {
-		AbortWithError(ctx, http.StatusBadRequest, "Poll ID already exists")
+		AbortWithError(ctx, http.StatusConflict, "Poll ID already exists")
 		return
 	}
 
@@ -80,15 +73,14 @@ func createPollPOST(ctx *gin.Context) {
 		return
 	}
 
-	// now, all parameters are valid
-	p := polls.NewPoll(id, title, description, cookieCheck, multipleOptions, rndStr, int(deleteIn), options)
+	p := polls.NewPoll(id, title, description, cookieCheck, multipleOptions, rndStr, del, options)
 
-	if err = sess.SavePoll(p); err != nil {
+	if err = sess.InsertPoll(p); err != nil {
 		AbortWithError(ctx, http.StatusInternalServerError, "error saving data into database")
 		return
 	}
 
-	ctx.JSON(http.StatusCreated, gin.H{"msg": "poll successfully created"})
+	ctx.JSON(http.StatusCreated, gin.H{"status": "ok", "msg": "successfully created", "editToken": p.EditToken})
 }
 
 /* +--------------------+
@@ -98,27 +90,19 @@ func createPollPOST(ctx *gin.Context) {
  * +--------------------+
  */
 func getPollGET(ctx *gin.Context) {
-	id := ctx.Param("id")
-
-	if !logic.ValidateID(id) {
-		AbortWithError(ctx, http.StatusBadRequest, statusIllegalId)
+	var id string
+	if ok := getId(ctx, &id); !ok {
 		return
 	}
 
 	sess := db.GetPollSession()
 	defer sess.Close()
 	poll, err := sess.GetPoll(id)
-	if err != nil {
-		if err == mgo.ErrNotFound {
-			AbortWithError(ctx, http.StatusBadRequest, statusPollNotExist)
-			return
-		}
-
-		AbortWithError(ctx, http.StatusInternalServerError, "Error while searching ID from database.")
+	if !checkGetPoll(ctx, err) {
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"msg": "ok", "data": poll})
+	ctx.JSON(http.StatusOK, gin.H{"status": "ok", "data": poll})
 }
 
 /* +--------------------+
@@ -129,36 +113,28 @@ func getPollGET(ctx *gin.Context) {
  * +--------------------+
  */
 func votePollPUT(ctx *gin.Context) {
-	id := ctx.Param("id")
+	var id string
+	if ok := getId(ctx, &id); !ok {
+		return
+	}
+
 	//ip := ctx.Request.RemoteAddr
 	//TODO: rewrite IP getter for production (headers, proxies, etc)
 	ip := logic.GetIp(ctx.Request)
-	cookieToken := ctx.PostForm("cookieToken")
-	option := ctx.PostForm("option")
 
-	if !logic.ValidateID(id) {
-		AbortWithError(ctx, http.StatusBadRequest, statusIllegalId)
-		return
-	}
 
 	sess := db.GetPollSession()
 	defer sess.Close()
 	poll, err := sess.GetPoll(id)
-	if err != nil {
-		if err == mgo.ErrNotFound {
-			AbortWithError(ctx, http.StatusNotFound, "Id not found")
-			return
-		}
-
-		AbortWithError(ctx, http.StatusInternalServerError, "error while getting poll from database.")
-		return
-	}
+	checkGetPoll(ctx, err)
 
 	if poll.VotingStopped {
 		AbortWithError(ctx, http.StatusBadRequest, "voting has already stopped.")
 		return
 	}
 
+	cookieToken := ctx.PostForm("cookieToken")
+	option := ctx.PostForm("option")
 	//apply the new vote to the struct, so we can update it in the DB later
 	if !logic.ApplyVote(poll, ip, cookieToken, option) {
 		AbortWithError(ctx, http.StatusBadRequest, "you already have voted or your option is bad.")
@@ -167,11 +143,76 @@ func votePollPUT(ctx *gin.Context) {
 
 	err = sess.UpdatePoll(id, poll)
 	if err != nil {
-		AbortWithError(ctx, http.StatusInternalServerError, "error while updating poll.")
+		AbortWithError(ctx, http.StatusInternalServerError, statusErrorUpdateing)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"msg": "successfully voted for " + option})
+	ok(ctx, "successful voted for " + option + ".")
+}
+
+/* +--------------------+
+ * |      PATCH         |
+ * +--------------------+
+ * | • id               |
+ * | • editToken        |
+ * +--------------------+
+ */
+func stopPollPATCH(ctx *gin.Context) {
+	var id string
+	if ok := getId(ctx, &id); !ok {
+		return
+	}
+
+	sess := db.GetPollSession()
+	defer sess.Close()
+
+	p, err := sess.GetPoll(id)
+	if !checkGetPoll(ctx, err) {
+		return
+	}
+
+	edit := ctx.PostForm("editToken")
+	if edit != p.EditToken {
+		AbortWithError(ctx, http.StatusBadRequest, "invalid editToken")
+		return
+	}
+
+	p.VotingStopped = true
+	err = sess.UpdatePoll(id, p)
+	if err != nil {
+		AbortWithError(ctx, http.StatusInternalServerError, statusErrorUpdateing)
+		return
+	}
+
+	ok(ctx, "voting stopped.")
+}
+
+/* helper functions */
+
+// returns true if id is valid
+func getId(ctx *gin.Context, id *string) bool {
+	*id = ctx.Param("id")
+
+	if !logic.ValidateID(*id) {
+		AbortWithError(ctx, http.StatusBadRequest, statusIllegalId)
+		return false
+	}
+	return true
+}
+
+// returns true if no error occurred
+func checkGetPoll(ctx *gin.Context, err error) bool {
+	if err != nil {
+		if err == mgo.ErrNotFound {
+			AbortWithError(ctx, http.StatusBadRequest, statusPollNotExist)
+			return false
+		}
+
+		AbortWithError(ctx, http.StatusInternalServerError, "Error while searching ID from database.")
+		return false
+	}
+
+	return true
 }
 
 func AddAllPollHandler(server *server.WebServer) {
@@ -180,4 +221,5 @@ func AddAllPollHandler(server *server.WebServer) {
 	pollGroup.POST("/create", createPollPOST)
 	pollGroup.PUT("/vote/:id", votePollPUT)
 	pollGroup.GET("/get/:id", getPollGET)
+	pollGroup.PATCH("/stop/:id", stopPollPATCH)
 }

@@ -26,7 +26,7 @@ func ValidateID(id string) bool {
 	return ok
 }
 
-func ValidatePostParams(title, desc, cookieCheck, multiOptions string, options []string) bool {
+func ValidatePostParams(title, desc, cookieCheck, multiOptions, deleteDays string, options []string) bool {
 
 	if len(title) > MaxLongStringLentgh || len(title) < 1 {
 		return false
@@ -52,6 +52,13 @@ func ValidatePostParams(title, desc, cookieCheck, multiOptions string, options [
 		if !DefaultValidation(elem) {
 			return false
 		}
+	}
+
+	// we only allow ints in range of 0 to 2047.
+	// So we don't waste all the other 53 bytes and 2047 days are enough I think. That are 5.6 years
+	n, err := strconv.ParseUint(deleteDays, 10, 11)
+	if err != nil || n < 1 {
+		return false
 	}
 
 	return true

@@ -85,7 +85,7 @@ func (ps *PollSession) PollExists(id string) (bool, error) {
 	return check.ID == id, nil
 }
 
-func (ps *PollSession) SavePoll(doc interface{}) error {
+func (ps *PollSession) InsertPoll(doc interface{}) error {
 	return func() error {
 		return ps.c.Insert(doc)
 	}()

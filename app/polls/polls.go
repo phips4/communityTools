@@ -15,7 +15,6 @@ type Vote struct {
 	CookieToken string `bson:"cookieToken" json:"cookie_token"`
 }
 
-//
 // we marshall the struct to json and not vice versa. Since that, fields annotated with "-" are fine.
 type Poll struct {
 	ID              string        `bson:"_id" json:"id"`
@@ -29,10 +28,10 @@ type Poll struct {
 	TotalVotes      int           `json:"totalVotes"`
 	VotingStopped   bool          `json:"votingStopped"`
 	EditToken       string        `bson:"editToken" json:"-"`
-	DeleteAt        time.Time     `json:"delete_at"`
+	DeleteAt        time.Time     `json:"delete_at"` //TODO: add TTL mongodb index
 }
 
-func NewPoll(id, title, desc, cookie, multiOptions, editToken string, deleteAt int, options []string) *Poll {
+func NewPoll(id, title, desc, cookie, multiOptions, editToken, deleteDays string, options []string) *Poll {
 	pollOption := make([]*PollOption, len(options))
 
 	for i := range pollOption {
@@ -49,6 +48,11 @@ func NewPoll(id, title, desc, cookie, multiOptions, editToken string, deleteAt i
 		return nil
 	}
 
+	n, err := strconv.ParseUint(deleteDays, 10, 11)
+	if err != nil {
+		return nil
+	}
+
 	return &Poll{
 		id,
 		title,
@@ -61,6 +65,6 @@ func NewPoll(id, title, desc, cookie, multiOptions, editToken string, deleteAt i
 		0,
 		false,
 		editToken,
-		time.Now().Add(time.Hour * time.Duration(24) * time.Duration(deleteAt)),
+		time.Now().Add(time.Hour * time.Duration(24) * time.Duration(n)),
 	}
 }
