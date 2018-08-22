@@ -28,6 +28,8 @@ func (server *WebServer) Listen(addr string) {
 		Handler: server.Router,
 	}
 
+	server.Router.ForwardedByClientIP = true
+
 	go func() {
 		if err := server.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("webserver (%s) listen: %s\n", addr, err)

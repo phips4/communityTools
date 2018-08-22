@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/phips4/communityTools/app/db"
 	"github.com/phips4/communityTools/app/logic"
@@ -11,12 +12,12 @@ import (
 	"strconv"
 )
 
-var statusIllegalId = "ID contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength)
+var statusIllegalId = "id contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength)
 
 const (
 	statusInvalidPostParams = "invalid post parameter"
 	statusPollNotExist      = "poll does not exist"
-	statusErrorUpdateing = "error while updating poll."
+	statusErrorUpdating     = "error while updating poll"
 )
 
 /* +--------------------+
@@ -31,10 +32,10 @@ const (
  * | • deleteIn         |
  * +--------------------+
  */
-func createPollPOST(ctx *gin.Context) {
-	var id string
-	if ok := getId(ctx, &id); !ok {
-		return
+func createPollPOST(ctx *gin.Context) (int, error) {
+	id := ctx.PostForm("id")
+	if !logic.ValidateID(id) {
+		return http.StatusBadRequest, errors.New(statusIllegalId)
 	}
 
 	title := ctx.PostForm("title")
@@ -44,8 +45,7 @@ func createPollPOST(ctx *gin.Context) {
 	options := ctx.PostFormArray("options")
 	del := ctx.PostForm("deleteIn")
 	if !logic.ValidatePostParams(title, description, cookieCheck, multipleOptions, del, options) {
-		AbortWithError(ctx, http.StatusBadRequest, statusInvalidPostParams)
-		return
+		return http.StatusBadRequest, errors.New(statusInvalidPostParams)
 	}
 
 	sess := db.GetPollSession()
@@ -55,32 +55,29 @@ func createPollPOST(ctx *gin.Context) {
 		if err == mgo.ErrNotFound {
 			exist = false
 		} else {
-			AbortWithError(ctx, http.StatusInternalServerError, "error while fetching data from database, ")
-			return
+			return http.StatusInternalServerError, errors.New("error while fetching data from database")
 		}
 	}
 
 	if exist {
-		AbortWithError(ctx, http.StatusConflict, "Poll ID already exists")
-		return
+		return http.StatusConflict, errors.New("poll ID already exists")
 	}
 
 	//64^DeleteIdLength should definitely be enough to avoid bruteforcing or guessing
 	//64^7 = 4.398e+12
 	rndStr, err := logic.GenerateRandomString(logic.DeleteIdLength)
 	if err != nil {
-		AbortWithError(ctx, http.StatusInternalServerError, "error while generating delete ID.")
-		return
+		return http.StatusInternalServerError, errors.New("error while generating delete ID")
 	}
 
 	p := polls.NewPoll(id, title, description, cookieCheck, multipleOptions, rndStr, del, options)
 
 	if err = sess.InsertPoll(p); err != nil {
-		AbortWithError(ctx, http.StatusInternalServerError, "error saving data into database")
-		return
+		return http.StatusInternalServerError, errors.New("error saving data into database")
 	}
 
 	ctx.JSON(http.StatusCreated, gin.H{"status": "ok", "msg": "successfully created", "editToken": p.EditToken})
+	return http.StatusOK, nil
 }
 
 /* +--------------------+
@@ -89,20 +86,22 @@ func createPollPOST(ctx *gin.Context) {
  * | • id               |
  * +--------------------+
  */
-func getPollGET(ctx *gin.Context) {
+func getPollGET(ctx *gin.Context) (code int, err error) {
 	var id string
-	if ok := getId(ctx, &id); !ok {
-		return
+	if code, err := getId(ctx, &id); err != nil {
+		return code, err
 	}
 
 	sess := db.GetPollSession()
 	defer sess.Close()
+
 	poll, err := sess.GetPoll(id)
-	if !checkGetPoll(ctx, err) {
-		return
+	if code, err := checkGetPoll(err); err != nil {
+		return code, err
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "ok", "data": poll})
+	return http.StatusOK, nil
 }
 
 /* +--------------------+
@@ -113,20 +112,22 @@ func getPollGET(ctx *gin.Context) {
  * | • option           |
  * +--------------------+
  */
-func votePollPUT(ctx *gin.Context) {
+func votePollPUT(ctx *gin.Context) (int, error) {
 	var id string
-	if ok := getId(ctx, &id); !ok {
-		return
+	if code, err := getId(ctx, &id); err != nil {
+		return code, err
 	}
 
 	sess := db.GetPollSession()
 	defer sess.Close()
 	poll, err := sess.GetPoll(id)
-	checkGetPoll(ctx, err)
+
+	if code, err := checkGetPoll(err); err != nil {
+		return code, err
+	}
 
 	if poll.VotingStopped {
-		AbortWithError(ctx, http.StatusBadRequest, "voting has already stopped.")
-		return
+		return http.StatusBadRequest, errors.New("voting has already stopped")
 	}
 
 	cookieToken := ctx.PostForm("cookieToken")
@@ -134,20 +135,19 @@ func votePollPUT(ctx *gin.Context) {
 	//apply the new vote to the struct, so we can update it in the DB later
 	if err := logic.ApplyVote(poll, ctx.ClientIP(), cookieToken, option); err != nil {
 		if err == logic.ErrAlreadyVoted {
-			AbortWithError(ctx, http.StatusBadRequest, "you have already voted")
+			return http.StatusBadRequest, errors.New("you have already voted")
 		} else {
-			AbortWithError(ctx, http.StatusBadRequest, "your given option might me wrong") //meh
+			return http.StatusBadRequest, errors.New("your given option might be wrong") //meh
 		}
-		return
 	}
 
 	err = sess.UpdatePoll(id, poll)
 	if err != nil {
-		AbortWithError(ctx, http.StatusInternalServerError, statusErrorUpdateing)
-		return
+		return http.StatusInternalServerError, errors.New(statusErrorUpdating)
 	}
 
-	ok(ctx, "successful voted for " + option + ".")
+	ok(ctx, "successful voted for "+option+".")
+	return http.StatusOK, nil
 }
 
 /* +--------------------+
@@ -157,34 +157,33 @@ func votePollPUT(ctx *gin.Context) {
  * | • editToken        |
  * +--------------------+
  */
-func stopPollPATCH(ctx *gin.Context) {
+func stopPollPATCH(ctx *gin.Context) (int, error) {
 	var id string
-	if ok := getId(ctx, &id); !ok {
-		return
+	if code, err := getId(ctx, &id); err != nil {
+		return code, err
 	}
 
 	sess := db.GetPollSession()
 	defer sess.Close()
 
 	p, err := sess.GetPoll(id)
-	if !checkGetPoll(ctx, err) {
-		return
+	if code, err := checkGetPoll(err); err != nil {
+		return code, err
 	}
 
 	edit := ctx.PostForm("editToken")
 	if edit != p.EditToken {
-		AbortWithError(ctx, http.StatusBadRequest, "invalid editToken")
-		return
+		return http.StatusBadRequest, errors.New("invalid editToken")
 	}
 
 	p.VotingStopped = true
 	err = sess.UpdatePoll(id, p)
 	if err != nil {
-		AbortWithError(ctx, http.StatusInternalServerError, statusErrorUpdateing)
-		return
+		return http.StatusInternalServerError, errors.New(statusErrorUpdating)
 	}
 
 	ok(ctx, "voting stopped.")
+	return http.StatusOK, nil
 }
 
 /* +--------------------+
@@ -192,83 +191,88 @@ func stopPollPATCH(ctx *gin.Context) {
  * +--------------------+
  * | • id               |
  * | • editToken        |
- * | • sure        |
+ * | • sure             |
  * +--------------------+
  */
-func deletePollDELETE(ctx *gin.Context) {
+func deletePollDELETE(ctx *gin.Context) (int, error) {
 	var id string
-	if ok := getId(ctx, &id); !ok {
-		return
+	if code, err := getId(ctx, &id); err != nil {
+		return code, err
 	}
 
 	sure, err := strconv.ParseBool(ctx.PostForm("sure"))
 	if err != nil {
-		AbortWithError(ctx, http.StatusBadRequest, "can not convert post parameter 'sure' to bool")
-		return
+		return http.StatusBadRequest, errors.New("can not convert post parameter 'sure' to bool")
 	}
 	if !sure {
-		AbortWithError(ctx, http.StatusBadRequest, "deletion is not accepted by request.")
-		return
+		return http.StatusBadRequest, errors.New("deletion is not accepted by request")
 	}
 
 	sess := db.GetPollSession()
 	defer sess.Close()
 	p, err := sess.GetPoll(id)
-	if !checkGetPoll(ctx, err) {
-		return
+	if code, err := checkGetPoll(err); err != nil {
+		return code, err
 	}
 
 	edit := ctx.PostForm("editToken")
 	if edit != p.EditToken {
-		AbortWithError(ctx, http.StatusBadRequest, "invalid editToken")
-		return
+		return http.StatusBadRequest, errors.New("invalid editToken")
 	}
 
 	err = sess.DeletePoll(id)
 	if err != nil {
-		AbortWithError(ctx, http.StatusInternalServerError, "error while deleting poll")
-		return
+		return http.StatusInternalServerError, errors.New("error while deleting poll")
 	}
 
 	ok(ctx, "successfully deleted.")
+	return http.StatusOK, nil
 }
 
 /**************************
  *  helper functions
  **************************/
+ // adapter function for better error handling
+func errorHandler(f func(ctx *gin.Context) (code int, err error)) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		code, err := f(ctx)
+		if err != nil {
+			ctx.AbortWithStatusJSON(code, gin.H{"status": "error", "msg": err.Error()})
+		}
+	}
+}
 
 // returns true if id is valid
-func getId(ctx *gin.Context, id *string) bool {
+func getId(ctx *gin.Context, id *string) (int, error) {
 	*id = ctx.Param("id")
 
 	if !logic.ValidateID(*id) {
-		AbortWithError(ctx, http.StatusBadRequest, statusIllegalId)
-		return false
+		return http.StatusBadRequest, errors.New(statusIllegalId)
 	}
-	return true
+
+	return -1, nil
 }
 
 // returns true if no error occurred
-func checkGetPoll(ctx *gin.Context, err error) bool {
+func checkGetPoll(err error) (int, error) {
 	if err != nil {
 		if err == mgo.ErrNotFound {
-			AbortWithError(ctx, http.StatusBadRequest, statusPollNotExist)
-			return false
+			return http.StatusBadRequest, errors.New(statusPollNotExist)
 		}
 
-		AbortWithError(ctx, http.StatusInternalServerError, "Error while searching ID from database.")
-		return false
+		return http.StatusInternalServerError, errors.New("error while searching ID from database")
 	}
 
-	return true
+	return -1, nil
 }
 
+// register all poll endpoints
 func AddAllPollHandler(server *server.WebServer) {
 	pollGroup := server.Router.Group("/api/v1/poll")
 
-	pollGroup.POST("/create", createPollPOST)
-	pollGroup.PUT("/vote/:id", votePollPUT)
-	pollGroup.GET("/get/:id", getPollGET)
-	pollGroup.PATCH("/stop/:id", stopPollPATCH)
-	pollGroup.DELETE("/delete/:id", deletePollDELETE)
+	pollGroup.POST("/create", errorHandler(createPollPOST))
+	pollGroup.PUT("/vote/:id", errorHandler(votePollPUT))
+	pollGroup.GET("/get/:id", errorHandler(getPollGET))
+	pollGroup.PATCH("/stop/:id", errorHandler(stopPollPATCH))
+	pollGroup.DELETE("/delete/:id", errorHandler(deletePollDELETE))
 }
