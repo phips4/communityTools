@@ -26,11 +26,20 @@ func Contains(src []string, elem string) bool {
 }
 
 func ContainsIpOrToken(votes []*polls.Vote, ip, token string) bool {
-	for _, vote := range votes {
-		if vote.IP == ip || vote.CookieToken == token {
+	for _, v := range votes {
+		if v.IP == ip || v.CookieToken == token {
 			return true
 		}
 	}
 
+	return false
+}
+
+func VotedFor(option string, votes []*polls.Vote, ip, token string) bool {
+	for _, v := range votes {
+		if (v.IP == ip || v.CookieToken == token) && v.Option == option {
+			return true
+		}
+	}
 	return false
 }

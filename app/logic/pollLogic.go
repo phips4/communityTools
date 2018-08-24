@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"github.com/phips4/communityTools/app/polls"
 	"github.com/phips4/communityTools/app/utils"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -94,39 +93,37 @@ func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) error {
 		return ErrSomethingWrong
 	}
 
-	if poll.Votes == nil {
-		votes := make([]*polls.Vote, 1)
-		votes[0] = &polls.Vote{IP: ip, CookieToken: cookieToken}
-		poll.Votes = votes
-		poll.TotalVotes++
-
+	apply := func() {
 		for i := range poll.Options {
 			if poll.Options[i].Option == option {
 				poll.Options[i].VoteCount++
+				poll.Options[i].Option = option
 			}
 		}
+	}
+
+	if poll.Votes == nil {
+		votes := make([]*polls.Vote, 1)
+		votes[0] = &polls.Vote{IP: ip, CookieToken: cookieToken, Option: option}
+		poll.Votes = votes
+		apply()
 		return nil
 	}
 
-	if utils.ContainsIpOrToken(poll.Votes, ip, cookieToken) {
+	if poll.MultipleOptions {
+		if utils.VotedFor(option, poll.Votes, ip, cookieToken) {
+			return ErrAlreadyVoted
+		} else {
+			apply()
+		}
+	} else if utils.ContainsIpOrToken(poll.Votes, ip, cookieToken) {
 		return ErrAlreadyVoted
 	}
 
-	poll.Votes = append(poll.Votes, &polls.Vote{IP: ip, CookieToken: cookieToken})
+	poll.Votes = append(poll.Votes, &polls.Vote{IP: ip, CookieToken: cookieToken, Option: option})
+	apply()
 
-	for i := range poll.Options {
-		if poll.Options[i].Option == option {
-			poll.Options[i].VoteCount++
-		}
-	}
-
-	poll.TotalVotes++
 	return nil
-}
-
-func GetIp(req *http.Request) string {
-	runes := []rune(req.RemoteAddr)
-	return string(runes[1 : len(runes)-7])
 }
 
 //TODO: unit tests

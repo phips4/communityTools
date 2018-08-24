@@ -99,10 +99,4 @@ func TestApplyVote(t *testing.T) {
 	if p.Votes == nil {
 		t.Error("Votes can not be empty but it is.")
 	}
-
-	/*
-		out, err := json.MarshalIndent(p, "", "  ")
-		if err != nil {
-			t.Errorf("err is not nil: %v", err.Error())
-		}*/
 }

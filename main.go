@@ -40,6 +40,7 @@ func main() {
 	webServer := server.New()
 	//register all handlers
 	handler.AddAllPollHandler(webServer)
+	handler.AddAllStaticRoutes(webServer)
 	webServer.Listen(fmt.Sprintf("%s:%d", conf.WebServer.Host, conf.WebServer.Port))
 }
 
