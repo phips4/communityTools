@@ -19,18 +19,30 @@ var (
 	dbName  string
 )
 
-func Connect(host string, port int) *mgo.Session {
+func Connect(host string, port int, db, user, passwd string) *mgo.Session {
 	if session != nil {
 		session.Close()
 	}
-
-	ses, err := mgo.Dial(fmt.Sprintf("%s:%d", host, port))
+	var ses *mgo.Session
+	var err error
+	auth := func() {
+		if user == "" {
+			ses, err = mgo.Dial(fmt.Sprintf("%s:%d", host, port))
+		} else {
+			ses, err = mgo.DialWithInfo(&mgo.DialInfo{Database: db, Username: user, Password: passwd, Addrs: []string{fmt.Sprintf("%s:%d", host, port)}})
+		}
+	}
+	if err != nil {
+		log.Fatal(err)
+		return nil
+	}
+	auth()
 	wait := 5
 
 	for err != nil {
-		log.Printf("can not connect to mongodb (%s:%d: %s) error: Waiting %d secounds.", host, port, err, wait)
+		log.Printf("can not connect to mongodb (%s:%d: error: %s) Waiting %d secounds.", host, port, err, wait)
 		time.Sleep(time.Second * time.Duration(wait))
-		ses, err = mgo.Dial(fmt.Sprintf("%s:%d", host, port))
+		auth()
 		wait += 5
 	}
 
@@ -38,16 +50,6 @@ func Connect(host string, port int) *mgo.Session {
 
 	session = ses
 	return ses
-}
-
-func Login(database string, credential *mgo.Credential) error {
-	dbName = database
-
-	if credential == nil {
-		return nil
-	}
-
-	return session.Login(credential)
 }
 
 func GetPollSession() *PollSession {

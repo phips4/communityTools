@@ -40,11 +40,8 @@ func main() {
 	conf := loadConfig()
 
 	// mgo
-	mongo := db.Connect(conf.MongoDB.Host, conf.MongoDB.Port)
+	mongo := db.Connect(conf.MongoDB.Host, conf.MongoDB.Port, conf.MongoDB.Database, conf.MongoDB.User, conf.MongoDB.Password)
 	defer mongo.Close()
-
-	//TODO:
-	db.Login(conf.MongoDB.Database, nil)
 
 	log.Println("starting application")
 
