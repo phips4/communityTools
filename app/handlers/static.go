@@ -1,17 +1,17 @@
-package handler
+package handlers
 
 import (
-	"github.com/phips4/communityTools/server"
 	"github.com/gin-gonic/gin"
+	"github.com/phips4/communityTools/app/servers"
 	"io/ioutil"
 )
 
 //TODO: add frontend git submodule instead
-func AddAllStaticRoutes(server *server.WebServer) {
+func AddAllStaticRoutes(server *servers.DefaultServer) {
 	server.Router.StaticFile("/", "./public/static/index.html")
 
 	server.Router.NoRoute(func(context *gin.Context) {
-		//only for testing
+		//only for testing, I know this is bad.
 		bytes, err := ioutil.ReadFile("public/static/404.html")
 		if err != nil {
 			context.Error(err)

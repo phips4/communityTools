@@ -20,7 +20,6 @@ var (
 )
 
 func Connect(host string, port int) *mgo.Session {
-
 	if session != nil {
 		session.Close()
 	}
@@ -69,11 +68,10 @@ func (ps *PollSession) Close() {
 }
 
 func (ps *PollSession) PollExists(id string) (bool, error) {
-	type checkId struct {
+	check := struct {
 		ID string `bson:"_id"`
-	}
+	}{}
 
-	var check *checkId
 	err := ps.c.FindId(id).One(&check)
 
 	if err != nil {
@@ -86,9 +84,7 @@ func (ps *PollSession) PollExists(id string) (bool, error) {
 }
 
 func (ps *PollSession) InsertPoll(doc interface{}) error {
-	return func() error {
-		return ps.c.Insert(doc)
-	}()
+	return ps.c.Insert(doc)
 }
 
 func (ps *PollSession) GetPoll(id string) (*polls.Poll, error) {

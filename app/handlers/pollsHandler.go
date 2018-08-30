@@ -1,4 +1,4 @@
-package handler
+package handlers
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"github.com/phips4/communityTools/app/db"
 	"github.com/phips4/communityTools/app/logic"
 	"github.com/phips4/communityTools/app/polls"
-	"github.com/phips4/communityTools/server"
+	"github.com/phips4/communityTools/app/servers"
 	"gopkg.in/mgo.v2"
 	"net/http"
 	"strconv"
@@ -99,6 +99,9 @@ func getPollGET(ctx *gin.Context) (code int, err error) {
 	if code, err := checkGetPoll(err); err != nil {
 		return code, err
 	}
+
+	// we don't allow the user to see the ips and cookie secrets.
+	poll.Votes = nil
 
 	ctx.JSON(http.StatusOK, gin.H{"status": "ok", "data": poll})
 	return http.StatusOK, nil
@@ -232,7 +235,7 @@ func deletePollDELETE(ctx *gin.Context) (int, error) {
 /**************************
  *  helper functions
  **************************/
- // adapter function for better error handling
+// adapter function for better error handling
 func errorHandler(f func(ctx *gin.Context) (code int, err error)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		code, err := f(ctx)
@@ -259,7 +262,6 @@ func checkGetPoll(err error) (int, error) {
 		if err == mgo.ErrNotFound {
 			return http.StatusBadRequest, errors.New(statusPollNotExist)
 		}
-
 		return http.StatusInternalServerError, errors.New("error while searching ID from database")
 	}
 
@@ -267,7 +269,7 @@ func checkGetPoll(err error) (int, error) {
 }
 
 // register all poll endpoints
-func AddAllPollHandler(server *server.WebServer) {
+func AddAllPollHandler(server *servers.DefaultServer) {
 	pollGroup := server.Router.Group("/api/v1/poll")
 
 	pollGroup.POST("/create", errorHandler(createPollPOST))

@@ -2,8 +2,11 @@ package app
 
 import (
 	"fmt"
+	"github.com/phips4/communityTools/app/utils"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -59,4 +62,29 @@ func (w *LogWriter) Write(bytes []byte) (n int, err error) {
 
 func (w *LogWriter) Close() error {
 	return w.file.Close()
+}
+
+func (w *LogWriter) Compress() error {
+	files, err := ioutil.ReadDir("logs")
+	if err != nil {
+		return err
+	}
+
+	now := time.Now().Format("2006-01-02") + ".log"
+
+	for _, f := range files {
+		if strings.HasSuffix(f.Name(), ".log") && f.Name() != now {
+			err = utils.Gzip(filepath.Join("logs", f.Name()))
+			if err != nil {
+				return err
+			}
+
+			err = os.Remove(filepath.Join("logs", f.Name()))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
 }

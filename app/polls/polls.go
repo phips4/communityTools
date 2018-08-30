@@ -13,7 +13,7 @@ type PollOption struct {
 type Vote struct {
 	IP          string `bson:"ip" json:"ip"`
 	CookieToken string `bson:"cookieToken" json:"cookie_token"`
-	Option 		string `json:"option"`
+	Option      string `json:"option"`
 }
 
 // we marshall the struct to json and not vice versa. Since that, fields annotated with "-" are fine.
@@ -22,8 +22,8 @@ type Poll struct {
 	Title           string        `json:"title"`
 	Description     string        `json:"description"`
 	CreatedAt       time.Time     `bson:"createdAt" json:"created_at,omitempty"`
-	CookieCheck     bool          `bson:"cookieCheck" json:"cookie_check"`         //TODO:
-	MultipleOptions bool          `bson:"multipleOptions" json:"multiple_options"` //TODO:
+	CookieCheck     bool          `bson:"cookieCheck" json:"cookie_check"` //TODO:
+	MultipleOptions bool          `bson:"multipleOptions" json:"multiple_options"`
 	Options         []*PollOption `json:"options,omitempty"`
 	Votes           []*Vote       `json:"votes,omitempty"`
 	VotingStopped   bool          `json:"votingStopped"`

@@ -9,54 +9,74 @@ import (
 )
 
 const defaultConfig = `#Config generated on %v
-#MongoDB settings
+######################################
+#            connections             #
+######################################
 MongoDB:
   host: "localhost"
   port: 27017
   user: "ComToolsUser"
   database: communityTools
   password: "312surlaW"
-  setupCollections: true
 
-#Swift Openstack settings (ignore it if you are not going to use it)
-OpenstackSwift:
+######################################
+#             modules                #
+######################################
+# enabled   - de/activate the given module
+# ownServer - should this module run on its own webserver?
+#             If not it will run on the default webserver.
+#             This option is useful for splitting up every module to its own sub-domain e.g.
+# host      - ip or hostname for the module own webserver, ignore if ownServer is false
+# port      - port for the module own webserver, ignore if ownServer is false
+
+Polls:
+  enabled: true
+  ownServer: false
   host: "localhost"
-  port: 12345
-  user: "ComToolsUser"
-  password: "312surlaWkcatsnepo"
+  port: 54321
 
-#webserver
+######################################
+#          general settings          #
+######################################
+# Webserver
+# this is the default webserver. It's used if a module
+# doesn't run on its own webserver. 
 Webserver:
-  host: ""
+  enabled: true
+  host: "localhost"
   port: 4337
 
-#Generall settings
-#Use the locally filesystem instead of OpenStack Swift?
-useFileSystem: true
-`
+#Use the locally filesystem?
+useFileSystem: true`
 
 type Config struct{}
 
 type ConfigStruct struct {
 	MongoDB struct {
-		Host             string `yaml:"host"`
-		Port             int    `yaml:"port"`
-		User             string `yaml:"user"`
-		Database         string `yaml:"database"`
-		Password         string `yaml:"password"`
-		SetupCollections bool   `yaml:"setupCollections"`
-	} `yaml:"MongoDB"`
-
-	OpenstackSwift struct {
 		Host     string `yaml:"host"`
 		Port     int    `yaml:"port"`
 		User     string `yaml:"user"`
+		Database string `yaml:"database"`
 		Password string `yaml:"password"`
-	} `yaml:"OpenstackSwift"`
+	} `yaml:"MongoDB"`
 
-	WebServer struct {
-		Host string `yaml:"host"`
-		Port int    `yaml:"port"`
+	//TODO: implement filesystem first
+	/*
+		OpenstackSwift struct {
+			Host     string `yaml:"host"`
+			Port     int    `yaml:"port"`
+			User     string `yaml:"user"`
+			Password string `yaml:"password"`
+		} `yaml:"OpenstackSwift"`
+	*/
+
+	// modules
+	ModulePoll `yaml:"Polls"`
+
+	Webserver struct {
+		Enabled bool   `yaml:"enabled"`
+		Host    string `yaml:"host"`
+		Port    int    `yaml:"port"`
 	} `yaml:"Webserver"`
 
 	UseFileSystem string `yaml:"useFileSystem"`
@@ -75,7 +95,6 @@ func (c *Config) LoadConfig() *ConfigStruct {
 
 	bytes, err := ioutil.ReadFile("config.yml")
 	must(err)
-
 	conf := &ConfigStruct{}
 	err = yaml.Unmarshal(bytes, conf)
 	must(err)

@@ -3,12 +3,12 @@ package logic
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"errors"
 	"github.com/phips4/communityTools/app/polls"
 	"github.com/phips4/communityTools/app/utils"
 	"regexp"
 	"strconv"
 	"strings"
-	"errors"
 )
 
 const (
@@ -17,12 +17,10 @@ const (
 	DeleteIdLength      = 7
 )
 
-
 var (
-	ErrAlreadyVoted = errors.New("you have already voted")
+	ErrAlreadyVoted   = errors.New("you have already voted")
 	ErrSomethingWrong = errors.New("something went wrong")
 )
-
 
 func ValidateID(id string) bool {
 
