@@ -6,6 +6,8 @@ import (
 	"github.com/phips4/communityTools/app/polls"
 	"gopkg.in/mgo.v2"
 	"log"
+	"os"
+	"strings"
 	"time"
 )
 
@@ -46,7 +48,13 @@ func Connect(mgoConf app.MgoConf) *mgo.Session {
 	wait := 5
 
 	for err != nil {
+		if strings.Contains(err.Error(), "Authentication failed") {
+			log.Printf("can not connect to mongodb (%s:%d: error: %s).", mgoConf.Host, mgoConf.Port, err)
+			os.Exit(2)
+		}
+
 		log.Printf("can not connect to mongodb (%s:%d: error: %s) Waiting %d secounds.", mgoConf.Host, mgoConf.Port, err, wait)
+
 		time.Sleep(time.Second * time.Duration(wait))
 		auth()
 		wait += 5
