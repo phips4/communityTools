@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	. "github.com/phips4/communityTools/app"
 	"github.com/phips4/communityTools/app/db"
@@ -27,7 +26,6 @@ func main() {
 |                                                  |___/                       |`)
 	println("#==============================================================================#")
 
-
 	//logger
 	closeLogger := loadLogger()
 
@@ -40,39 +38,40 @@ func main() {
 	conf := loadConfig()
 
 	// mgo
-	mongo := db.Connect(conf.MongoDB.Host, conf.MongoDB.Port, conf.MongoDB.Database, conf.MongoDB.User, conf.MongoDB.Password)
+	mongo := db.Connect(conf.MgoConf)
 	defer mongo.Close()
 
 	log.Println("starting application")
 
 	// default webserver
-	var dServer *servers.DefaultServer
+	var dSrv *servers.DefaultServer
 	if conf.Webserver.Enabled {
-		dServer = servers.New()
-		handlers.AddAllStaticRoutes(dServer)
+		dSrv = servers.NewDefaultServer()
+		handlers.AddAllStaticRoutes(dSrv)
 	}
-
-	// load all modules
-	loadPollsModule(conf, dServer)
 
 	// start default servers if enabled
 	if conf.Webserver.Enabled {
-		go dServer.Listen(fmt.Sprintf("%s:%d", conf.Webserver.Host, conf.Webserver.Port))
+		go dSrv.Listen(conf.Webserver.Host, conf.Webserver.Port)
 	}
+
+	// load all modules
+	pSrv := loadPollsModule(conf, dSrv)
+	// ...
 
 	waitForShutdown(func() {
 		//close default webserver
 		if conf.Webserver.Enabled {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			if err := dServer.Stop(ctx); err != nil {
+			if err := dSrv.Stop(ctx); err != nil {
 				log.Fatal("Server Shutdown: ", err)
 			}
 		}
 
-		// check for module-bound servers
+		// shutdown module-bound servers
 		if conf.ModulePoll.OwnServer {
-			//TODO:
+			pSrv.Stop(nil)
 		}
 
 		closeLogger()
@@ -110,21 +109,25 @@ func loadConfig() *ConfigStruct {
 	return config.LoadConfig()
 }
 
-func loadPollsModule(c *ConfigStruct, ws *servers.DefaultServer) {
-	if c.ModulePoll.Enabled {
-		if c.ModulePoll.OwnServer {
-			//TODO:
-		} else {
-			if ws == nil {
-				log.Println("Can not load polls module.")
-				log.Println("Default servers is disabled and own webserver too.")
-				os.Exit(2)
-				return
-			}
-			handlers.AddAllPollHandler(ws)
-		}
-		log.Println("polls module enabled")
-	} else {
-		log.Print("polls module enabled")
+func loadPollsModule(c *ConfigStruct, ws *servers.DefaultServer) *servers.PollsServer {
+	defer log.Println("pollsModule active:", c.ModulePoll.Enabled)
+	if !c.ModulePoll.Enabled {
+		return nil
 	}
+	if c.ModulePoll.OwnServer {
+		pSrv := servers.NewPollsServer()
+		handlers.AddAllPollHandler(pSrv.DefaultServer)
+		go pSrv.Listen(c.ModulePoll.Host, c.ModulePoll.Port)
+		log.Println("started ")
+		return pSrv
+	} else {
+		if ws == nil {
+			log.Println("Can not load polls module.")
+			log.Println("Default servers is disabled and own webserver too.")
+			os.Exit(2)
+			return nil
+		}
+		handlers.AddAllPollHandler(ws)
+	}
+	return nil
 }

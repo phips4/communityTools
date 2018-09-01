@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 )
 
-//TODO: add frontend git submodule instead
+//TODO: add frontend git submodule instead or consider to put the frontend as its own module instead of the defaultServer
 func AddAllStaticRoutes(server *servers.DefaultServer) {
 	server.Router.StaticFile("/", "./public/static/index.html")
 

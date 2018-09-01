@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/phips4/communityTools/app"
 	"github.com/phips4/communityTools/app/polls"
 	"gopkg.in/mgo.v2"
 	"log"
@@ -19,17 +20,22 @@ var (
 	dbName  string
 )
 
-func Connect(host string, port int, db, user, passwd string) *mgo.Session {
+func Connect(mgoConf app.MgoConf) *mgo.Session {
 	if session != nil {
 		session.Close()
 	}
 	var ses *mgo.Session
 	var err error
 	auth := func() {
-		if user == "" {
-			ses, err = mgo.Dial(fmt.Sprintf("%s:%d", host, port))
+		if mgoConf.User == "" {
+			ses, err = mgo.Dial(fmt.Sprintf("%s:%d", mgoConf.Host, mgoConf.Port))
 		} else {
-			ses, err = mgo.DialWithInfo(&mgo.DialInfo{Database: db, Username: user, Password: passwd, Addrs: []string{fmt.Sprintf("%s:%d", host, port)}})
+			ses, err = mgo.DialWithInfo(&mgo.DialInfo{
+				Database: mgoConf.Database,
+				Username: mgoConf.User,
+				Password: mgoConf.Password,
+				Addrs:    []string{fmt.Sprintf("%s:%d", mgoConf.Host, mgoConf.Port)},
+			})
 		}
 	}
 	if err != nil {
@@ -40,7 +46,7 @@ func Connect(host string, port int, db, user, passwd string) *mgo.Session {
 	wait := 5
 
 	for err != nil {
-		log.Printf("can not connect to mongodb (%s:%d: error: %s) Waiting %d secounds.", host, port, err, wait)
+		log.Printf("can not connect to mongodb (%s:%d: error: %s) Waiting %d secounds.", mgoConf.Host, mgoConf.Port, err, wait)
 		time.Sleep(time.Second * time.Duration(wait))
 		auth()
 		wait += 5
@@ -52,21 +58,21 @@ func Connect(host string, port int, db, user, passwd string) *mgo.Session {
 	return ses
 }
 
+/* ======================================
+ * | PollSession                        |
+ * ====================================== */
+type PollSession struct {
+	c        *mgo.Collection
+	closePtr func()
+}
+
 func GetPollSession() *PollSession {
 	s := session.Clone()
 	return &PollSession{s.DB(dbName).C(pollCollection), s.Close}
 }
 
-/*
- * PollSession methods
- */
-type PollSession struct {
-	c            *mgo.Collection
-	closePointer func()
-}
-
 func (ps *PollSession) Close() {
-	ps.closePointer()
+	ps.closePtr()
 }
 
 func (ps *PollSession) PollExists(id string) (bool, error) {
@@ -75,10 +81,8 @@ func (ps *PollSession) PollExists(id string) (bool, error) {
 	}{}
 
 	err := ps.c.FindId(id).One(&check)
-
 	if err != nil {
-		// it is safer to say the ID already exists, because it would no create a new one
-		// and we also check that case afterwards again
+		// it is safer to say the ID already exists, it would not create a new one
 		return true, err
 	}
 

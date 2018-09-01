@@ -18,11 +18,12 @@ type Vote struct {
 
 // we marshall the struct to json and not vice versa. Since that, fields annotated with "-" are fine.
 type Poll struct {
-	ID              string        `bson:"_id" json:"id"`
-	Title           string        `json:"title"`
-	Description     string        `json:"description"`
-	CreatedAt       time.Time     `bson:"createdAt" json:"created_at,omitempty"`
-	CookieCheck     bool          `bson:"cookieCheck" json:"cookie_check"` //TODO:
+	ID          string    `bson:"_id" json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `bson:"createdAt" json:"created_at,omitempty"`
+	//TODO: CookieCheck: false -> ignore cookie, only lookup for ip entry. This is only important for voting atm.
+	CookieCheck     bool          `bson:"cookieCheck" json:"cookie_check"`
 	MultipleOptions bool          `bson:"multipleOptions" json:"multiple_options"`
 	Options         []*PollOption `json:"options,omitempty"`
 	Votes           []*Vote       `json:"votes,omitempty"`

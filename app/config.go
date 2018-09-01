@@ -51,26 +51,19 @@ useFileSystem: true`
 
 type Config struct{}
 
-type ConfigStruct struct {
-	MongoDB struct {
-		Host     string `yaml:"host"`
-		Port     int    `yaml:"port"`
-		User     string `yaml:"user"`
-		Database string `yaml:"database"`
-		Password string `yaml:"password"`
-	} `yaml:"MongoDB"`
+type MgoConf struct {
+	Host     string `yaml:"host"`
+	Port     int    `yaml:"port"`
+	User     string `yaml:"user"`
+	Database string `yaml:"database"`
+	Password string `yaml:"password"`
+}
 
-	//TODO: implement filesystem first
-	/*
-		OpenstackSwift struct {
-			Host     string `yaml:"host"`
-			Port     int    `yaml:"port"`
-			User     string `yaml:"user"`
-			Password string `yaml:"password"`
-		} `yaml:"OpenstackSwift"`
-	*/
+type ConfigStruct struct {
+	MgoConf `yaml:"MongoDB"`
 
 	// modules
+	// info: defined in ./modules.go
 	ModulePoll `yaml:"Polls"`
 
 	Webserver struct {
