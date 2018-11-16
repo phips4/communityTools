@@ -18,7 +18,7 @@ func NewDefaultServer() *DefaultServer {
 	return &DefaultServer{
 		gin.Default(),
 		nil,
-		"defaultServer",
+		"webServer",
 	}
 }
 
@@ -30,7 +30,7 @@ func (server *DefaultServer) Listen(host string, port int) {
 	}
 	server.Router.ForwardedByClientIP = true
 
-	log.Printf("%s server listening on :%d", server.name, port)
+	log.Printf("%s listening on :%d", server.name, port)
 	if err := server.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("%s (%s) listen: %s\n", server.name, addr, err)
 	}

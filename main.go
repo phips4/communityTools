@@ -14,24 +14,24 @@ import (
 )
 
 func main() {
-
-	println("#==============================================================================#")
-	println(`|                                            _ _      _______          _       |
+	println(
+`#==============================================================================#
+|                                            _ _      _______          _       |
 |                                           (_) |    |__   __|        | |      |
 |   ___ ___  _ __ ___  _ __ ___  _   _ _ __  _| |_ _   _| | ___   ___ | |___   |
 |  / __/ _ \| '_ ' _ \| '_ ' _ \| | | | '_ \| | __| | | | |/ _ \ / _ \| / __|  |
 | | (_| (_) | | | | | | | | | | | |_| | | | | | |_| |_| | | (_) | (_) | \__ \  |
 |  \___\___/|_| |_| |_|_| |_| |_|\__,_|_| |_|_|\__|\__, |_|\___/ \___/|_|___/  |
 |                                                   __/ |                      |
-|                                                  |___/                       |`)
-	println("#==============================================================================#")
+|                                                  |___/                       |
+#==============================================================================#`)
 
 	//logger
 	closeLogger := loadLogger()
 
 	if os.Getenv("GIN_MODE") == "" {
 		log.Println("[INFO]: set env. 'export GIN_MODE=release' on production")
-		gin.SetMode(gin.TestMode)
+		gin.SetMode(gin.DebugMode)
 	}
 
 	//config
@@ -45,33 +45,20 @@ func main() {
 
 	// default webserver
 	var dSrv *servers.DefaultServer
-	if conf.Webserver.Enabled {
-		dSrv = servers.NewDefaultServer()
-		handlers.AddAllStaticRoutes(dSrv)
-	}
+	dSrv = servers.NewDefaultServer()
+	handlers.AddAllStaticRoutes(dSrv)
+	handlers.AddAllPollHandler(dSrv)
+	handlers.AddAllGeneralHandler(dSrv)
 
-	// start default servers if enabled
-	if conf.Webserver.Enabled {
-		go dSrv.Listen(conf.Webserver.Host, conf.Webserver.Port)
-	}
-
-	// load all modules
-	pSrv := loadPollsModule(conf, dSrv)
-	// ...
+	// start default server
+	go dSrv.Listen(conf.Webserver.Host, conf.Webserver.Port)
 
 	waitForShutdown(func() {
 		//close default webserver
-		if conf.Webserver.Enabled {
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			if err := dSrv.Stop(ctx); err != nil {
-				log.Fatal("Server Shutdown: ", err)
-			}
-		}
-
-		// shutdown module-bound servers
-		if conf.ModulePoll.OwnServer {
-			pSrv.Stop(nil)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := dSrv.Stop(ctx); err != nil {
+			log.Fatal("Server Shutdown: ", err)
 		}
 
 		closeLogger()
@@ -107,27 +94,4 @@ func loadConfig() *ConfigStruct {
 	config := Config{}
 	log.Println("config read.")
 	return config.LoadConfig()
-}
-
-func loadPollsModule(c *ConfigStruct, ws *servers.DefaultServer) *servers.PollsServer {
-	defer log.Println("pollsModule active:", c.ModulePoll.Enabled)
-	if !c.ModulePoll.Enabled {
-		return nil
-	}
-	if c.ModulePoll.OwnServer {
-		pSrv := servers.NewPollsServer()
-		handlers.AddAllPollHandler(pSrv.DefaultServer)
-		go pSrv.Listen(c.ModulePoll.Host, c.ModulePoll.Port)
-		log.Println("started ")
-		return pSrv
-	} else {
-		if ws == nil {
-			log.Println("Can not load polls module.")
-			log.Println("Default servers is disabled and own webserver too.")
-			os.Exit(2)
-			return nil
-		}
-		handlers.AddAllPollHandler(ws)
-	}
-	return nil
 }

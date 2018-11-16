@@ -10,11 +10,8 @@ import (
 	"strings"
 	"time"
 )
-
-type SessionType int
-
 const (
-	pollCollection = "polls"
+	pollsCollection = "polls"
 )
 
 var (
@@ -76,7 +73,7 @@ type PollSession struct {
 
 func GetPollSession() *PollSession {
 	s := session.Clone()
-	return &PollSession{s.DB(dbName).C(pollCollection), s.Close}
+	return &PollSession{s.DB(dbName).C(pollsCollection), s.Close}
 }
 
 func (ps *PollSession) Close() {
@@ -115,3 +112,19 @@ func (ps *PollSession) UpdatePoll(id string, poll *polls.Poll) error {
 func (ps *PollSession) DeletePoll(id string) error {
 	return ps.c.RemoveId(id)
 }
+/* ======================================
+ * | Stats                              |
+ * ====================================== */
+ func stats() {
+
+ 	s := session.Copy()
+ 	defer s.Close()
+
+
+ 	n, err := s.DB(dbName).C(pollsCollection).Count()
+ 	_ = n
+ 	if err != nil {
+ 		return
+	}
+
+ }

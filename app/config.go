@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+	"log"
 	"os"
 	"time"
 )
@@ -23,26 +24,15 @@ MongoDB:
 #             modules                #
 ######################################
 # enabled   - de/activate the given module
-# ownServer - should this module run on its own webserver?
-#             If not it will run on the default webserver.
-#             This option is useful for splitting up every module to its own sub-domain e.g.
-# host      - ip or hostname for the module own webserver, ignore if ownServer is false
-# port      - port for the module own webserver, ignore if ownServer is false
-
 Polls:
   enabled: true
-  ownServer: false
-  host: "localhost"
-  port: 54321
 
 ######################################
 #          general settings          #
 ######################################
 # Webserver
-# this is the default webserver. It's used if a module
-# doesn't run on its own webserver. 
+# this is the default webserver. 
 Webserver:
-  enabled: true
   host: "localhost"
   port: 4337
 
@@ -61,10 +51,6 @@ type MgoConf struct {
 
 type ConfigStruct struct {
 	MgoConf `yaml:"MongoDB"`
-
-	// modules
-	// info: defined in ./modules.go
-	ModulePoll `yaml:"Polls"`
 
 	Webserver struct {
 		Enabled bool   `yaml:"enabled"`
@@ -97,6 +83,6 @@ func (c *Config) LoadConfig() *ConfigStruct {
 
 func must(err error) {
 	if err != nil {
-		panic(err)
+		log.Printf(err.Error())
 	}
 }

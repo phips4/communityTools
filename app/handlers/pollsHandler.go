@@ -8,6 +8,7 @@ import (
 	"github.com/phips4/communityTools/app/polls"
 	"github.com/phips4/communityTools/app/servers"
 	"gopkg.in/mgo.v2"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -232,18 +233,9 @@ func deletePollDELETE(ctx *gin.Context) (int, error) {
 	return http.StatusOK, nil
 }
 
-/**************************
- *  helper functions
- **************************/
-// adapter function for better error handling
-func errorHandler(f func(ctx *gin.Context) (code int, err error)) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		code, err := f(ctx)
-		if err != nil {
-			ctx.AbortWithStatusJSON(code, gin.H{"status": "error", "msg": err.Error()})
-		}
-	}
-}
+/*************************************
+ *  poll specific helper functions
+ *************************************/
 
 // returns true if id is valid
 func getId(ctx *gin.Context, id *string) (int, error) {
@@ -270,6 +262,10 @@ func checkGetPoll(err error) (int, error) {
 
 // register all poll endpoints
 func AddAllPollHandler(server *servers.DefaultServer) {
+	if gin.IsDebugging() {
+		log.Print(" ")
+		log.Print("POLL HANDLERS")
+	}
 	pollGroup := server.Router.Group("/api/v1/poll")
 
 	pollGroup.POST("/create", errorHandler(createPollPOST))

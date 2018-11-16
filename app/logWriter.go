@@ -24,7 +24,6 @@ func NewLogWriter() *LogWriter {
 	}
 
 	fpath := filepath.Join("logs", time.Now().Format("2006-01-02")+".log")
-
 	if _, err := os.Stat(fpath); os.IsNotExist(err) {
 		_, err := os.Create(fpath)
 		if err != nil {
@@ -44,7 +43,6 @@ func NewLogWriter() *LogWriter {
 
 func (w *LogWriter) Write(bytes []byte) (n int, err error) {
 	logLine := fmt.Sprintf("[LOG][%s]: %s", time.Now().Format("2006-01-02 15:04.05"), string(bytes))
-
 	var printBytes int
 
 	if printBytes, printErr := fmt.Print(logLine); printErr != nil {
@@ -85,6 +83,5 @@ func (w *LogWriter) Compress() error {
 			}
 		}
 	}
-
 	return err
 }
