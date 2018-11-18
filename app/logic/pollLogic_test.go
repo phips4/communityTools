@@ -1,7 +1,7 @@
 package logic
 
 import (
-	"github.com/phips4/communityTools/app/polls"
+	"github.com/phips4/communityTools/app/entity"
 	"testing"
 	"time"
 )
@@ -10,22 +10,22 @@ func TestDefaultValidation(t *testing.T) {
 	t.Parallel()
 
 	str := "abc123"
-	if DefaultValidation(str) == false {
+	if IdLengthValidation(str) == false {
 		t.Errorf("'%s' should be valid.", str)
 	}
 
 	str = "abc-123"
-	if DefaultValidation(str) == false {
+	if IdLengthValidation(str) == false {
 		t.Errorf("'%s' should be valid.", str)
 	}
 
 	str = ""
-	if DefaultValidation(str) == true {
+	if IdLengthValidation(str) == true {
 		t.Errorf("'%s' should not be valid, beacuse it is a empty string.", str)
 	}
 
 	str = "db.communityTools.find( { $where: function() { return obj.totalVotes > 10; } } );"
-	if DefaultValidation(str) == true {
+	if IdLengthValidation(str) == true {
 		t.Error("Should not be valid, because the string is too long.")
 	}
 }
@@ -71,7 +71,7 @@ func TestValidatePostParams(t *testing.T) {
 func TestApplyVote(t *testing.T) {
 	t.Parallel()
 
-	p := polls.NewPoll("pollId", "pollTitle", "pollDesc", "true", "true", "editToken", "7", []string{"vote1", "vote2"})
+	p := entity.NewPoll("pollId", "pollTitle", "pollDesc", "true", "true", "editToken", "7", []string{"vote1", "vote2"})
 	p.CreatedAt = time.Date(2018, 8, 15, 0, 0, 0, 0, time.UTC)
 
 	if err := ApplyVote(p, "127.0.0.1", "cookieToken", "vote1"); err != nil {

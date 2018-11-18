@@ -4,15 +4,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/phips4/communityTools/app/servers"
 	"io/ioutil"
-	"log"
 )
 
 //TODO: add frontend
 func AddAllStaticRoutes(server *servers.DefaultServer) {
-	if gin.IsDebugging() {
-		log.Print(" ")
-		log.Print("STATIC HANDLERS")
-	}
+	debugHandlerRegistration("STATIC")
 
 	server.Router.NoRoute(func(context *gin.Context) {
 		//only for testing, I know this is bad.

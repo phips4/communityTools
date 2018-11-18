@@ -20,7 +20,7 @@ func TestGetPollGET(t *testing.T) {
 	ws.Router.ForwardedByClientIP = true
 
 	w := httptest.NewRecorder()
-	req := httptest.NewRequest("GET", "/api/v1/polls/get/AIWDAWDwAD", nil)
+	req := httptest.NewRequest("GET", "/api/v1/entity/get/AIWDAWDwAD", nil)
 	ws.Router.ServeHTTP(w, req)
 
 	assert.Equal(t, http.StatusOK, w.Code, "expected 200; got %v.", w.Code)

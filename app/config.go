@@ -9,23 +9,41 @@ import (
 	"time"
 )
 
-const defaultConfig = `#Config generated on %v
+const dEFAULT_CONFIG = `#Config generated on %v
 ######################################
 #            connections             #
 ######################################
 MongoDB:
   host: "localhost"
   port: 27017
-  user: "ComToolsUser"
+  user: ""
   database: communityTools
   password: "312surlaW"
 
 ######################################
 #             modules                #
 ######################################
-# enabled   - de/activate the given module
-Polls:
-  enabled: true
+# enabled   - de/activates a module
+modules:
+  urlshortener:
+    shortName: "url"
+    enabled: true
+
+  textupload:
+    shortName: "txt"
+    enabled: true
+
+  fileupload: 
+    shortName: "file"
+    enabled: true
+
+  imageupload: 
+    shortName: "img"
+    enabled: true
+
+  polls: 
+    shortName: "polls"
+    enabled: true
 
 ######################################
 #          general settings          #
@@ -58,6 +76,33 @@ type ConfigStruct struct {
 		Port    int    `yaml:"port"`
 	} `yaml:"Webserver"`
 
+	Modules struct {
+		TextUpload struct {
+			ShortName string `yaml:"shortName" json:"short_name"`
+			Enabled   bool   `yaml:"enabled" json:"enabled"`
+		} `yaml:"textupload" json:"text_upload"`
+
+		FileUpload struct {
+			ShortName string `yaml:"shortName" json:"short_name"`
+			Enabled   bool   `yaml:"enabled" json:"enabled"`
+		} `yaml:"fileupload" json:"file_upload"`
+
+		ImageUpload struct {
+			ShortName string `yaml:"shortName" json:"short_name"`
+			Enabled   bool   `yaml:"enabled" json:"enabled"`
+		} `yaml:"imageupload" json:"image_upload"`
+
+		URLShortener struct {
+			ShortName string `yaml:"shortName" json:"short_name"`
+			Enabled   bool   `yaml:"enabled" json:"enabled"`
+		} `yaml:"urlshortener" json:"url_shortener"`
+		
+		Polls struct {
+			ShortName string `yaml:"shortName" json:"short_name"`
+			Enabled   bool   `yaml:"enabled" json:"enabled"`
+		} `yaml:"polls" json:"polls"`
+	} `yaml:"modules" json:"modules"`
+
 	UseFileSystem string `yaml:"useFileSystem"`
 }
 
@@ -68,7 +113,7 @@ func (c *Config) LoadConfig() *ConfigStruct {
 		must(err)
 		defer file.Close()
 
-		_, err = file.WriteString(fmt.Sprintf(defaultConfig, time.Now().Format("Mon Jan 2 15:04:05 2006")))
+		_, err = file.WriteString(fmt.Sprintf(dEFAULT_CONFIG, time.Now().Format("Mon Jan 2 15:04:05 2006")))
 		must(err)
 	}
 

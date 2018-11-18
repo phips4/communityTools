@@ -3,15 +3,16 @@ package db
 import (
 	"fmt"
 	"github.com/phips4/communityTools/app"
-	"github.com/phips4/communityTools/app/polls"
+	"github.com/phips4/communityTools/app/entity"
 	"gopkg.in/mgo.v2"
 	"log"
 	"os"
 	"strings"
 	"time"
 )
+
 const (
-	pollsCollection = "polls"
+	pollsCollection = "entity"
 )
 
 var (
@@ -98,33 +99,33 @@ func (ps *PollSession) InsertPoll(doc interface{}) error {
 	return ps.c.Insert(doc)
 }
 
-func (ps *PollSession) GetPoll(id string) (*polls.Poll, error) {
-	var poll *polls.Poll
+func (ps *PollSession) GetPoll(id string) (*entity.Poll, error) {
+	var poll *entity.Poll
 	err := ps.c.FindId(id).One(&poll)
 
 	return poll, err
 }
 
-func (ps *PollSession) UpdatePoll(id string, poll *polls.Poll) error {
+func (ps *PollSession) UpdatePoll(id string, poll *entity.Poll) error {
 	return ps.c.UpdateId(id, poll)
 }
 
 func (ps *PollSession) DeletePoll(id string) error {
 	return ps.c.RemoveId(id)
 }
+
 /* ======================================
  * | Stats                              |
  * ====================================== */
- func stats() {
+func stats() {
+	s := session.Copy()
+	defer s.Close()
 
- 	s := session.Copy()
- 	defer s.Close()
-
-
- 	n, err := s.DB(dbName).C(pollsCollection).Count()
- 	_ = n
- 	if err != nil {
- 		return
+	n, err := s.DB(dbName).C(pollsCollection).Count()
+	_ = n
+	//TODO:
+	if err != nil {
+		return
 	}
 
- }
+}

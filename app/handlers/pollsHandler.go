@@ -4,16 +4,16 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/phips4/communityTools/app/db"
+	"github.com/phips4/communityTools/app/entity"
 	"github.com/phips4/communityTools/app/logic"
-	"github.com/phips4/communityTools/app/polls"
 	"github.com/phips4/communityTools/app/servers"
+	"github.com/phips4/communityTools/app/utils"
 	"gopkg.in/mgo.v2"
-	"log"
 	"net/http"
 	"strconv"
 )
 
-var statusIllegalId = "id contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxStringLength)
+var statusIllegalId = "id contains illegal character(s) or is too long. (a-zA-Z0-9_) 1-" + strconv.Itoa(logic.MaxIdStringLength)
 
 const (
 	statusInvalidPostParams = "invalid post parameter"
@@ -64,14 +64,10 @@ func createPollPOST(ctx *gin.Context) (int, error) {
 		return http.StatusConflict, errors.New("poll ID already exists")
 	}
 
-	//64^DeleteIdLength should definitely be enough to avoid bruteforcing or guessing
+	//64^DeleteTokenLength should definitely be enough to avoid bruteforcing or guessing
 	//64^7 = 4.398e+12
-	rndStr, err := logic.GenerateRandomString(logic.DeleteIdLength)
-	if err != nil {
-		return http.StatusInternalServerError, errors.New("error while generating delete ID")
-	}
-
-	p := polls.NewPoll(id, title, description, cookieCheck, multipleOptions, rndStr, del, options)
+	rndStr := utils.RandomString(logic.DeleteTokenLength)
+	p := entity.NewPoll(id, title, description, cookieCheck, multipleOptions, rndStr, del, options)
 
 	if err = sess.InsertPoll(p); err != nil {
 		return http.StatusInternalServerError, errors.New("error saving data into database")
@@ -262,10 +258,8 @@ func checkGetPoll(err error) (int, error) {
 
 // register all poll endpoints
 func AddAllPollHandler(server *servers.DefaultServer) {
-	if gin.IsDebugging() {
-		log.Print(" ")
-		log.Print("POLL HANDLERS")
-	}
+	debugHandlerRegistration("POLL")
+
 	pollGroup := server.Router.Group("/api/v1/poll")
 
 	pollGroup.POST("/create", errorHandler(createPollPOST))

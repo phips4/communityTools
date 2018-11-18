@@ -1,0 +1,20 @@
+[LOG][2018-11-11 13:16.00]: logger initialized.
+[LOG][2018-11-11 13:16.00]: [INFO]: set env. 'export GIN_MODE=release' on production
+[LOG][2018-11-11 13:16.00]: config read.
+[LOG][2018-11-11 13:16.00]: successfully connected to mongodb.
+[LOG][2018-11-11 13:16.00]: starting application
+[LOG][2018-11-11 13:16.00]: started 
+[LOG][2018-11-11 13:16.00]: pollsModule active: true
+[LOG][2018-11-11 13:16.00]: defaultServer server listening on :4337
+[LOG][2018-11-11 13:16.00]: pollsServer server listening on :54321
+[LOG][2018-11-11 13:16.10]: Shutdown app...
+[LOG][2018-11-11 13:18.05]: logger initialized.
+[LOG][2018-11-11 13:18.05]: [INFO]: set env. 'export GIN_MODE=release' on production
+[LOG][2018-11-11 13:18.05]: config read.
+[LOG][2018-11-11 13:18.05]: successfully connected to mongodb.
+[LOG][2018-11-11 13:18.05]: starting application
+[LOG][2018-11-11 13:18.05]: started 
+[LOG][2018-11-11 13:18.05]: pollsModule active: true
+[LOG][2018-11-11 13:18.05]: pollsServer server listening on :54321
+[LOG][2018-11-11 13:18.05]: defaultServer server listening on :4337
+[LOG][2018-11-11 13:18.28]: Shutdown app...

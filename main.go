@@ -15,7 +15,7 @@ import (
 
 func main() {
 	println(
-`#==============================================================================#
+		`#==============================================================================#
 |                                            _ _      _______          _       |
 |                                           (_) |    |__   __|        | |      |
 |   ___ ___  _ __ ___  _ __ ___  _   _ _ __  _| |_ _   _| | ___   ___ | |___   |
@@ -44,20 +44,23 @@ func main() {
 	log.Println("starting application")
 
 	// default webserver
-	var dSrv *servers.DefaultServer
-	dSrv = servers.NewDefaultServer()
-	handlers.AddAllStaticRoutes(dSrv)
-	handlers.AddAllPollHandler(dSrv)
-	handlers.AddAllGeneralHandler(dSrv)
+	var webSrv *servers.DefaultServer
+	webSrv = servers.NewDefaultServer()
+	handlers.AddAllStaticRoutes(webSrv)
+	handlers.AddAllGeneralHandler(webSrv, conf)
+
+	if conf.Modules.Polls.Enabled {
+		handlers.AddAllPollHandler(webSrv)
+	}
 
 	// start default server
-	go dSrv.Listen(conf.Webserver.Host, conf.Webserver.Port)
+	go webSrv.Listen(conf.Webserver.Host, conf.Webserver.Port)
 
 	waitForShutdown(func() {
 		//close default webserver
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		if err := dSrv.Stop(ctx); err != nil {
+		if err := webSrv.Stop(ctx); err != nil {
 			log.Fatal("Server Shutdown: ", err)
 		}
 
@@ -92,6 +95,6 @@ func loadLogger() func() {
 
 func loadConfig() *ConfigStruct {
 	config := Config{}
-	log.Println("config read.")
+	log.Println("config ready.")
 	return config.LoadConfig()
 }

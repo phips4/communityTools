@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/phips4/communityTools/app/polls"
+	"github.com/phips4/communityTools/app/entity"
 )
 
 func ContainsMany(src, content []string) bool {
@@ -15,27 +15,24 @@ func ContainsMany(src, content []string) bool {
 }
 
 func Contains(src []string, elem string) bool {
-
 	for _, e := range src {
 		if e == elem {
 			return true
 		}
 	}
-
 	return false
 }
 
-func ContainsIpOrToken(votes []*polls.Vote, ip, token string) bool {
+func ContainsIpOrToken(votes []*entity.Vote, ip, token string) bool {
 	for _, v := range votes {
 		if v.IP == ip || v.CookieToken == token {
 			return true
 		}
 	}
-
 	return false
 }
 
-func VotedFor(option string, votes []*polls.Vote, ip, token string) bool {
+func VotedFor(option string, votes []*entity.Vote, ip, token string) bool {
 	for _, v := range votes {
 		if (v.IP == ip || v.CookieToken == token) && v.Option == option {
 			return true

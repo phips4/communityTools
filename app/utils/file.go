@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 )
 
+// hard to test - would need more abstraction
 func Gzip(source string) error {
 	i, err := os.Open(source)
 	defer i.Close()
@@ -14,7 +15,7 @@ func Gzip(source string) error {
 		return err
 	}
 
-	output := withoutEnding(source) + ".zip"
+	output := withoutDotEnding(source) + ".zip"
 	o, err := os.Create(output)
 	defer o.Close()
 	if err != nil {
@@ -29,7 +30,7 @@ func Gzip(source string) error {
 	return nil
 }
 
-func withoutEnding(src string) string {
+func withoutDotEnding(src string) string {
 	runes := []rune(src)
 
 	for i := len(runes) - 1; i > 0; i-- {

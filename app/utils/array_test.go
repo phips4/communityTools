@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/phips4/communityTools/app/polls"
+	"github.com/phips4/communityTools/app/entity"
 	"testing"
 )
 
@@ -41,11 +41,11 @@ func TestContainsMany(t *testing.T) {
 func TestContainsIpOrToken(t *testing.T) {
 	t.Parallel()
 
-	votes := make([]*polls.Vote, 3)
+	votes := make([]*entity.Vote, 3)
 	// random generated IPs and tokens
-	votes[0] = &polls.Vote{IP: "174.26.249.79", CookieToken: "POG74ViLCAAHDOXycdnE6CmkY"}
-	votes[1] = &polls.Vote{IP: "221.200.87.228", CookieToken: "sSKrakmHNPbap0F31GFWT"}
-	votes[2] = &polls.Vote{IP: "181.184.85.10", CookieToken: "eY38Ut58if1eqGE8lVKX"}
+	votes[0] = &entity.Vote{IP: "174.26.249.79", CookieToken: "POG74ViLCAAHDOXycdnE6CmkY"}
+	votes[1] = &entity.Vote{IP: "221.200.87.228", CookieToken: "sSKrakmHNPbap0F31GFWT"}
+	votes[2] = &entity.Vote{IP: "181.184.85.10", CookieToken: "eY38Ut58if1eqGE8lVKX"}
 
 	if ContainsIpOrToken(votes, "174.26.249.79", "no token") == false {
 		t.Errorf("slice contains ip: '%s' but it fails.", "174.26.249.79")

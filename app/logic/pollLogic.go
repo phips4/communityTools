@@ -1,20 +1,10 @@
 package logic
 
 import (
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
-	"github.com/phips4/communityTools/app/polls"
+	"github.com/phips4/communityTools/app/entity"
 	"github.com/phips4/communityTools/app/utils"
-	"regexp"
 	"strconv"
-	"strings"
-)
-
-const (
-	MaxStringLength     = 64
-	MaxLongStringLentgh = 1024
-	DeleteIdLength      = 7
 )
 
 var (
@@ -22,22 +12,13 @@ var (
 	ErrSomethingWrong = errors.New("something went wrong")
 )
 
-func ValidateID(id string) bool {
-
-	if !DefaultValidation(id) {
-		return false
-	}
-	ok, _ := regexp.Match("^[a-zA-Z0-9_]*$", []byte(id))
-	return ok
-}
-
 func ValidatePostParams(title, desc, cookieCheck, multiOptions, deleteDays string, options []string) bool {
 
-	if len(title) > MaxLongStringLentgh || len(title) < 1 {
+	if len(title) > MaxLongStringLength || len(title) < 1 {
 		return false
 	}
 
-	if len(desc) > MaxLongStringLentgh || len(desc) < 1 {
+	if len(desc) > MaxLongStringLength || len(desc) < 1 {
 		return false
 	}
 
@@ -54,7 +35,7 @@ func ValidatePostParams(title, desc, cookieCheck, multiOptions, deleteDays strin
 	}
 
 	for _, elem := range options {
-		if !DefaultValidation(elem) {
+		if !IdLengthValidation(elem) {
 			return false
 		}
 	}
@@ -69,16 +50,8 @@ func ValidatePostParams(title, desc, cookieCheck, multiOptions, deleteDays strin
 	return true
 }
 
-func DefaultValidation(str string) bool {
-	l := len(str)
-	if l > MaxStringLength || l < 1 {
-		return false
-	}
-	return true
-}
-
 // returns nil if it was successfully
-func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) error {
+func ApplyVote(poll *entity.Poll, ip, cookieToken, option string) error {
 	optionContains := false
 	for _, e := range poll.Options {
 		if e.Option == option {
@@ -101,8 +74,8 @@ func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) error {
 	}
 
 	if poll.Votes == nil {
-		votes := make([]*polls.Vote, 1)
-		votes[0] = &polls.Vote{IP: ip, CookieToken: cookieToken, Option: option}
+		votes := make([]*entity.Vote, 1)
+		votes[0] = &entity.Vote{IP: ip, CookieToken: cookieToken, Option: option}
 		poll.Votes = votes
 		apply()
 		return nil
@@ -118,25 +91,8 @@ func ApplyVote(poll *polls.Poll, ip, cookieToken, option string) error {
 		return ErrAlreadyVoted
 	}
 
-	poll.Votes = append(poll.Votes, &polls.Vote{IP: ip, CookieToken: cookieToken, Option: option})
+	poll.Votes = append(poll.Votes, &entity.Vote{IP: ip, CookieToken: cookieToken, Option: option})
 	apply()
 
 	return nil
-}
-
-//TODO: unit tests
-func GenerateRandomBytes(n int) ([]byte, error) {
-	bytes := make([]byte, n)
-	_, err := rand.Read(bytes)
-	if err != nil {
-		return nil, err
-	}
-
-	return bytes, nil
-}
-
-//TODO: unit tests
-func GenerateRandomString(s int) (string, error) {
-	bytes, err := GenerateRandomBytes(s)
-	return strings.Replace(base64.URLEncoding.EncodeToString(bytes), "=", "", -1), err
 }

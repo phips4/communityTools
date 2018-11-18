@@ -1,0 +1,36 @@
+[LOG][2018-11-16 18:44.31]: logger initialized.
+[LOG][2018-11-16 18:44.31]: [INFO]: set env. 'export GIN_MODE=release' on production
+[LOG][2018-11-16 18:44.31]: config read.
+[LOG][2018-11-16 18:44.31]: successfully connected to mongodb.
+[LOG][2018-11-16 18:44.31]: starting application
+[LOG][2018-11-16 18:44.31]: [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[LOG][2018-11-16 18:44.31]: [GIN-debug] GET    /                         --> github.com/phips4/communityTools/vendor/github.com/gin-gonic/gin.(*RouterGroup).StaticFile.func1 (3 handlers)
+[LOG][2018-11-16 18:44.31]: [GIN-debug] HEAD   /                         --> github.com/phips4/communityTools/vendor/github.com/gin-gonic/gin.(*RouterGroup).StaticFile.func1 (3 handlers)
+[LOG][2018-11-16 18:44.31]: [GIN-debug] POST   /api/v1/poll/create       --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.31]: [GIN-debug] PUT    /api/v1/poll/vote/:id     --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.31]: [GIN-debug] GET    /api/v1/poll/get/:id      --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.31]: [GIN-debug] PATCH  /api/v1/poll/stop/:id     --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.31]: [GIN-debug] DELETE /api/v1/poll/delete/:id   --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.31]: defaultServer server listening on :4337
+[LOG][2018-11-16 18:44.31]: defaultServer (localhost:4337) listen: listen tcp 127.0.0.1:4337: bind: Normalerweise darf jede Socketadresse (Protokoll, Netzwerkadresse oder Anschluss) nur jeweils einmal verwendet werden.
+[LOG][2018-11-16 18:44.54]: logger initialized.
+[LOG][2018-11-16 18:44.54]: [INFO]: set env. 'export GIN_MODE=release' on production
+[LOG][2018-11-16 18:44.54]: config read.
+[LOG][2018-11-16 18:44.54]: successfully connected to mongodb.
+[LOG][2018-11-16 18:44.54]: starting application
+[LOG][2018-11-16 18:44.54]: [GIN-debug] [WARNING] Running in "debug" mode. Switch to "release" mode in production.
+ - using env:	export GIN_MODE=release
+ - using code:	gin.SetMode(gin.ReleaseMode)
+
+[LOG][2018-11-16 18:44.54]: [GIN-debug] GET    /                         --> github.com/phips4/communityTools/vendor/github.com/gin-gonic/gin.(*RouterGroup).StaticFile.func1 (3 handlers)
+[LOG][2018-11-16 18:44.54]: [GIN-debug] HEAD   /                         --> github.com/phips4/communityTools/vendor/github.com/gin-gonic/gin.(*RouterGroup).StaticFile.func1 (3 handlers)
+[LOG][2018-11-16 18:44.54]: [GIN-debug] POST   /api/v1/poll/create       --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.54]: [GIN-debug] PUT    /api/v1/poll/vote/:id     --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.54]: [GIN-debug] GET    /api/v1/poll/get/:id      --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.54]: [GIN-debug] PATCH  /api/v1/poll/stop/:id     --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.54]: [GIN-debug] DELETE /api/v1/poll/delete/:id   --> github.com/phips4/communityTools/app/handlers.errorHandler.func1 (3 handlers)
+[LOG][2018-11-16 18:44.54]: defaultServer server listening on :4337
+[LOG][2018-11-16 18:44.54]: defaultServer (localhost:4337) listen: listen tcp 127.0.0.1:4337: bind: Normalerweise darf jede Socketadresse (Protokoll, Netzwerkadresse oder Anschluss) nur jeweils einmal verwendet werden.
